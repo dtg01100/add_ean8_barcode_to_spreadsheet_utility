@@ -55,7 +55,7 @@ def do_process_workbook():
             barcode.drawImage()
             list_of_temp_images.append(str(barcode_number_with_check_digit) + '.png')
             img_resize = pil_Image.open(str(barcode_number_with_check_digit) + '.png')
-            img_save = pil_ImageOps.expand(img_resize.resize((width, height), pil_Image.ANTIALIAS), border=border_size,
+            img_save = pil_ImageOps.expand(img_resize.resize((width, height), resample=0), border=border_size,
                                            fill='white')
             img_save.save(str(barcode_number_with_check_digit) + 'RESIZED' + '.png')
             list_of_temp_images.append(str(barcode_number_with_check_digit) + 'RESIZED' + '.png')
