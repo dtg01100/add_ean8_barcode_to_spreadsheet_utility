@@ -1,14 +1,19 @@
+import barcode
 import openpyxl
 from openpyxl.drawing.image import Image as openpyxl_image
-import Image as pil_Image
+from PIL import Image as pil_Image
 import ImageOps as pil_ImageOps
-import barcodegen
 import os
 import math
-import upc_check_digit
+from barcode.writer import ImageWriter
 from Tkinter import *
 from ttk import *
 from tkFileDialog import *
+
+# Nasty hack to increase maximum number of images open, at least until i come up with a better way
+import win32file
+win32file._setmaxstdio(2048)
+
 
 root_window = Tk()
 
@@ -27,8 +32,9 @@ def select_folder_old_new_wrapper(selection):
             old_workbook_label.configure(text=old_workbook_path)
     else:
         new_workbook_path = asksaveasfilename()
-        if os.path.exists(new_workbook_path):
+        if os.path.exists(os.path.dirname(new_workbook_path)):
             new_workbook_label.configure(text=new_workbook_path)
+        print(new_workbook_path)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
         process_workbook_button.configure(state=NORMAL)
 
@@ -41,27 +47,29 @@ def do_process_workbook():
     list_of_temp_images = []
     print(ws.max_row)
     border_size = int(border_spinbox.get())
-    width = int(width_spinbox.get())
-    height = int(height_spinbox.get())
-    ws.column_dimensions['A'].width = int(math.ceil(float(width + border_size * 2) * .15))
 
     for _ in ws.iter_rows():
         try:
             upc_barcode_number = ws["B" + str(count)].value + "0"
-            print(upc_barcode_number)
-            barcode_number_with_check_digit = str(upc_barcode_number) + str(
-                upc_check_digit.upceCheckDigit(upc_barcode_number))
-            barcode = barcodegen.Ean8(barcode_number_with_check_digit)
-            barcode.drawImage()
-            list_of_temp_images.append(str(barcode_number_with_check_digit) + '.png')
-            img_resize = pil_Image.open(str(barcode_number_with_check_digit) + '.png')
-            img_save = pil_ImageOps.expand(img_resize.resize((width, height), resample=0), border=border_size,
-                                           fill='white')
-            img_save.save(str(barcode_number_with_check_digit) + 'RESIZED' + '.png')
-            list_of_temp_images.append(str(barcode_number_with_check_digit) + 'RESIZED' + '.png')
-            img = openpyxl_image(str(barcode_number_with_check_digit) + 'RESIZED' + '.png')
+            ean = barcode.get('ean8', upc_barcode_number, writer=ImageWriter())
+            ean.default_writer_options['dpi'] = int(dpi_spinbox.get())
+            ean.default_writer_options['module_height'] = float(height_spinbox.get())
+            ean.default_writer_options['text_distance'] = 1
+            ean.default_writer_options['font_size'] = 6
+            ean.default_writer_options['quiet_zone'] = 2
+            filename = ean.save("barcode " + str(upc_barcode_number))
+            list_of_temp_images.append(str(filename))
+            barcode_image = pil_Image.open(str(filename))
+            img_save = pil_ImageOps.expand(barcode_image, border=border_size, fill='white')
+            width, height = img_save.size
+            ws.column_dimensions['A'].width = int(math.ceil(float(width + border_size * 2) * .15))
+            img_save.save("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
+            list_of_temp_images.append("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
+            img = openpyxl_image("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
             ws.row_dimensions[count].height = int(math.ceil(float(height + border_size * 2) * .75))
             img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
+            img.drawing.left = 5
+            img.drawing.top = 5
             ws.add_image(img)
         except Exception, error:
             print(error)
@@ -109,8 +117,8 @@ go_button_frame = Frame(go_and_progress_frame)
 progress_bar_frame = Frame(go_and_progress_frame)
 size_spinbox_frame = Frame(root_window)
 
-width_spinbox = Spinbox(size_spinbox_frame, from_=60, to=200, width=3, justify=RIGHT)
-height_spinbox = Spinbox(size_spinbox_frame, from_=30, to_=100, width=3, justify=RIGHT)
+dpi_spinbox = Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=RIGHT)
+height_spinbox = Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=RIGHT)
 border_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=25, width=2, justify=RIGHT)
 
 old_workbook_selection_button = Button(master=old_workbook_file_frame, text="Select Original Workbook",
@@ -123,16 +131,16 @@ old_workbook_label = Label(master=old_workbook_file_frame, text="No File Selecte
 new_workbook_label = Label(master=new_workbook_file_frame, text="No File Selected")
 old_workbook_label.pack(anchor='w')
 new_workbook_label.pack(anchor='w')
-size_spinbox_width_label = Label(master=size_spinbox_frame, text="Barcode Width:",)
-size_spinbox_width_label.grid(row=0, column=0, sticky=W + E)
-size_spinbox_width_label.columnconfigure(0, weight=1)
+size_spinbox_dpi_label = Label(master=size_spinbox_frame, text="Barcode DPI:", )
+size_spinbox_dpi_label.grid(row=0, column=0, sticky=W + E)
+size_spinbox_dpi_label.columnconfigure(0, weight=1)
 size_spinbox_height_label = Label(master=size_spinbox_frame, text="Barcode Height:")
 size_spinbox_height_label.grid(row=1, column=0, sticky=W + E)
 size_spinbox_height_label.columnconfigure(0, weight=1)
 border_spinbox_label = Label(master=size_spinbox_frame, text="Barcode Border:")
 border_spinbox_label.grid(row=2, column=0, sticky=W + E)
 border_spinbox_label.columnconfigure(0, weight=1)
-width_spinbox.grid(row=0, column=1, sticky=E)
+dpi_spinbox.grid(row=0, column=1, sticky=E)
 height_spinbox.grid(row=1, column=1, sticky=E)
 border_spinbox.grid(row=2, column=1, sticky=E)
 
