@@ -65,8 +65,6 @@ def do_process_workbook():
             img = OpenPyXlImage("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
             ws.row_dimensions[count].height = int(math.ceil(float(height + border_size * 2) * .75))
             img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
-            img.drawing.left = 5
-            img.drawing.top = 5
             ws.add_image(img)
             # This save in the loop frees references to the barcode images,
             #  so that python's garbage collector can clear them
