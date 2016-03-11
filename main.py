@@ -13,7 +13,7 @@ from tkFileDialog import *
 
 root_window = Tk()
 
-root_window.title("insert upc utility for tobacco book")
+root_window.title("Barcode Insert Utility")
 
 old_workbook_path = ""
 new_workbook_path = ""
