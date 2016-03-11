@@ -110,10 +110,10 @@ def do_process_workbook():
 
 def process_workbook_command_wrapper():
     global new_workbook_path
+    process_workbook_button.configure(state=DISABLED)
     do_process_workbook()
     new_workbook_path = ""
     new_workbook_label.configure(text="No File Selected")
-    process_workbook_button.configure(state=DISABLED)
 
 
 both_workbook_frame = Frame(root_window)
