@@ -18,10 +18,11 @@ root_window.title("Barcode Insert Utility")
 old_workbook_path = ""
 new_workbook_path = ""
 
+# if working directory does not exist, create one
 if not os.path.exists(os.path.join(os.path.expanduser('~'), '.barcodeinsertutility')):
     os.chdir(os.path.expanduser('~'))
     os.mkdir('.barcodeinsertutility')
-
+# enter working directory
 os.chdir(os.path.join(os.path.join(os.path.expanduser('~'), '.barcodeinsertutility')))
 
 
