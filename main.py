@@ -9,6 +9,7 @@ from barcode.writer import ImageWriter
 from Tkinter import *
 from ttk import *
 from tkFileDialog import *
+import tempfile
 
 
 root_window = Tk()
@@ -18,12 +19,8 @@ root_window.title("Barcode Insert Utility")
 old_workbook_path = ""
 new_workbook_path = ""
 
-# if working directory does not exist, create one
-if not os.path.exists(os.path.join(os.path.expanduser('~'), '.barcodeinsertutility')):
-    os.chdir(os.path.expanduser('~'))
-    os.mkdir('.barcodeinsertutility')
-# enter working directory
-os.chdir(os.path.join(os.path.join(os.path.expanduser('~'), '.barcodeinsertutility')))
+
+tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility', )
 
 
 def select_folder_old_new_wrapper(selection):
@@ -67,8 +64,10 @@ def do_process_workbook():
             ean.default_writer_options['font_size'] = 6
             # quiet zone is the distance from the ends of the barcode to the ends of the image in mm
             ean.default_writer_options['quiet_zone'] = 2
-            filename = ean.save("barcode " + str(upc_barcode_number))  # save barcode image with generated filename
-            list_of_temp_images.append(str(os.path.abspath(filename)))  # add image to list of files to remove after run
+            # save barcode image with generated filename
+            filename = ean.save(os.path.join(tempdir, "barcode " + str(upc_barcode_number)))
+            # add image to list of files to remove after run
+            list_of_temp_images.append(os.path.abspath("barcode " + str(upc_barcode_number) + '.png'))
             barcode_image = pil_Image.open(str(filename))  # open image as pil object
             img_save = pil_ImageOps.expand(barcode_image, border=border_size, fill='white')  # add border around image
             width, height = img_save.size  # get image size of barcode with border
@@ -76,11 +75,11 @@ def do_process_workbook():
             ws.column_dimensions['A'].width = int(math.ceil(float(width) * .15))
             ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
             # write out image to file
-            img_save.save("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
+            img_save.save(os.path.join(tempdir, "barcode " + str(upc_barcode_number) + 'BORDER' + '.png'))
             # add image to list of files to remove after run
             list_of_temp_images.append(os.path.abspath("barcode " + str(upc_barcode_number) + 'BORDER' + '.png'))
             # open image with as openpyxl image object
-            img = OpenPyXlImage("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
+            img = OpenPyXlImage(os.path.join(tempdir, "barcode " + str(upc_barcode_number) + 'BORDER' + '.png'))
             # attach image to cell
             img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
             # add image to cell
@@ -108,21 +107,9 @@ def do_process_workbook():
         wb.save(new_workbook_path)
     except:
         print("Cannot write to output file")
-    finally:
-        progress_bar.configure(maximum=len(list_of_temp_images), value=count)
-        count = 0
-        for line in list_of_temp_images:
-            # noinspection PyBroadException
-            try:
-                os.remove(line)
-            except:
-                print(line + " missing")
-            finally:
-                count += 1
-                progress_bar.configure(value=count)
-                progress_bar_frame.update()
-        progress_bar.configure(value=0)
-        progress_bar_frame.update()
+
+    progress_bar.configure(value=0)
+    progress_bar_frame.update()
 
 
 def process_workbook_command_wrapper():
