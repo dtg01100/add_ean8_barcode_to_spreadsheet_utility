@@ -137,7 +137,7 @@ size_spinbox_frame = Frame(root_window)
 
 dpi_spinbox = Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=RIGHT)
 height_spinbox = Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=RIGHT)
-border_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=25, width=2, justify=RIGHT)
+border_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=RIGHT)
 
 old_workbook_selection_button = Button(master=old_workbook_file_frame, text="Select Original Workbook",
                                        command=lambda: select_folder_old_new_wrapper("old")).pack(anchor='w')
@@ -149,13 +149,13 @@ old_workbook_label = Label(master=old_workbook_file_frame, text="No File Selecte
 new_workbook_label = Label(master=new_workbook_file_frame, text="No File Selected")
 old_workbook_label.pack(anchor='w')
 new_workbook_label.pack(anchor='w')
-size_spinbox_dpi_label = Label(master=size_spinbox_frame, text="Barcode DPI:", )
+size_spinbox_dpi_label = Label(master=size_spinbox_frame, text="Barcode DPI:", anchor=E)
 size_spinbox_dpi_label.grid(row=0, column=0, sticky=W + E)
 size_spinbox_dpi_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-size_spinbox_height_label = Label(master=size_spinbox_frame, text="Barcode Height:")
+size_spinbox_height_label = Label(master=size_spinbox_frame, text="Barcode Height:", anchor=E)
 size_spinbox_height_label.grid(row=1, column=0, sticky=W + E)
 size_spinbox_height_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-border_spinbox_label = Label(master=size_spinbox_frame, text="Barcode Border:")
+border_spinbox_label = Label(master=size_spinbox_frame, text="Barcode Border:", anchor=E)
 border_spinbox_label.grid(row=2, column=0, sticky=W + E)
 border_spinbox_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
 dpi_spinbox.grid(row=0, column=1, sticky=E)
