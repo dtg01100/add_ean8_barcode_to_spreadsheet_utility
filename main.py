@@ -10,10 +10,6 @@ from Tkinter import *
 from ttk import *
 from tkFileDialog import *
 
-# Nasty hack to increase maximum number of images open, at least until i come up with a better way
-import win32file
-win32file._setmaxstdio(2048)
-
 
 root_window = Tk()
 
@@ -43,6 +39,7 @@ def do_process_workbook():
     wb = openpyxl.load_workbook(old_workbook_path)
     ws = wb.worksheets[0]
     count = 1
+    save_counter = 1
     progress_bar.configure(maximum=ws.max_row, value=count)
     list_of_temp_images = []
     print(ws.max_row)
@@ -71,6 +68,16 @@ def do_process_workbook():
             img.drawing.left = 5
             img.drawing.top = 5
             ws.add_image(img)
+            # This save in the loop frees references to the barcode images,
+            #  so that python's garbage collector can clear them
+            if save_counter == 500:
+                    # noinspection PyBroadException
+                try:
+                    wb.save(new_workbook_path)
+                except:
+                    print("Cannot write to output file")
+                save_counter = 1
+            save_counter += 1
         except Exception, error:
             print(error)
         finally:
