@@ -32,7 +32,7 @@ def select_folder_old_new_wrapper(selection):
             new_workbook_label.configure(text=new_workbook_path)
         print(new_workbook_path)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
-        process_workbook_button.configure(state=NORMAL)
+        process_workbook_button.configure(state=NORMAL, text="Process Workbook")
 
 
 def do_process_workbook():
@@ -110,10 +110,11 @@ def do_process_workbook():
 
 def process_workbook_command_wrapper():
     global new_workbook_path
-    process_workbook_button.configure(state=DISABLED)
+    process_workbook_button.configure(state=DISABLED, text="Processing Workbook")
     do_process_workbook()
     new_workbook_path = ""
     new_workbook_label.configure(text="No File Selected")
+    process_workbook_button.configure(text="Done Processing Workbook")
 
 
 both_workbook_frame = Frame(root_window)
@@ -151,7 +152,7 @@ dpi_spinbox.grid(row=0, column=1, sticky=E)
 height_spinbox.grid(row=1, column=1, sticky=E)
 border_spinbox.grid(row=2, column=1, sticky=E)
 
-process_workbook_button = Button(master=go_button_frame, text="Process Workbook",
+process_workbook_button = Button(master=go_button_frame, text="Select Workbooks",
                                  command=process_workbook_command_wrapper)
 
 process_workbook_button.configure(state=DISABLED)
