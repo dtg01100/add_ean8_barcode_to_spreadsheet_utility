@@ -18,16 +18,22 @@ root_window.title("Barcode Insert Utility")
 old_workbook_path = ""
 new_workbook_path = ""
 
+if not os.path.exists(os.path.join(os.path.expanduser('~'), '.barcodeinsertutility')):
+    os.chdir(os.path.expanduser('~'))
+    os.mkdir('.barcodeinsertutility')
+
+os.chdir(os.path.join(os.path.join(os.path.expanduser('~'), '.barcodeinsertutility')))
+
 
 def select_folder_old_new_wrapper(selection):
     global old_workbook_path
     global new_workbook_path
     if selection is "old":
-        old_workbook_path = askopenfilename()
+        old_workbook_path = askopenfilename(initialdir=os.path.expanduser('~'))
         if os.path.exists(old_workbook_path):
             old_workbook_label.configure(text=old_workbook_path)
     else:
-        new_workbook_path = asksaveasfilename()
+        new_workbook_path = asksaveasfilename(initialdir=os.path.expanduser('~'))
         if os.path.exists(os.path.dirname(new_workbook_path)):
             new_workbook_label.configure(text=new_workbook_path)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
@@ -61,7 +67,7 @@ def do_process_workbook():
             # quiet zone is the distance from the ends of the barcode to the ends of the image in mm
             ean.default_writer_options['quiet_zone'] = 2
             filename = ean.save("barcode " + str(upc_barcode_number))  # save barcode image with generated filename
-            list_of_temp_images.append(str(filename))  # add image to list of files to remove after run
+            list_of_temp_images.append(str(os.path.abspath(filename)))  # add image to list of files to remove after run
             barcode_image = pil_Image.open(str(filename))  # open image as pil object
             img_save = pil_ImageOps.expand(barcode_image, border=border_size, fill='white')  # add border around image
             width, height = img_save.size  # get image size of barcode with border
@@ -71,7 +77,7 @@ def do_process_workbook():
             # write out image to file
             img_save.save("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
             # add image to list of files to remove after run
-            list_of_temp_images.append("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
+            list_of_temp_images.append(os.path.abspath("barcode " + str(upc_barcode_number) + 'BORDER' + '.png'))
             # open image with as openpyxl image object
             img = OpenPyXlImage("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
             # attach image to cell
