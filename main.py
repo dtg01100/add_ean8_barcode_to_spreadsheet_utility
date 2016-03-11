@@ -1,6 +1,6 @@
 import barcode
 import openpyxl
-from openpyxl.drawing.image import Image as openpyxl_image
+from openpyxl.drawing.image import Image as OpenPyXlImage
 from PIL import Image as pil_Image
 import ImageOps as pil_ImageOps
 import os
@@ -62,7 +62,7 @@ def do_process_workbook():
             ws.column_dimensions['A'].width = int(math.ceil(float(width + border_size * 2) * .15))
             img_save.save("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
             list_of_temp_images.append("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
-            img = openpyxl_image("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
+            img = OpenPyXlImage("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
             ws.row_dimensions[count].height = int(math.ceil(float(height + border_size * 2) * .75))
             img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
             img.drawing.left = 5
