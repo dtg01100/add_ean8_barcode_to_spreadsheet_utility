@@ -43,26 +43,40 @@ def do_process_workbook():
     list_of_temp_images = []
     border_size = int(border_spinbox.get())
 
-    for _ in ws.iter_rows():
+    for _ in ws.iter_rows():  # iterate over all rows in current worksheet
         try:
+            # get code from column "B", on current row, add a zero to the end to make seven digits
             upc_barcode_number = ws["B" + str(count)].value + "0"
+            # select barcode type, specify barcode, and select image writer to save as png
             ean = barcode.get('ean8', upc_barcode_number, writer=ImageWriter())
+            # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
+            # dpi is the conversion from svg image size in mm, to what the image writer thinks is inches.
             ean.default_writer_options['dpi'] = int(dpi_spinbox.get())
+            # module height is the barcode bar height in mm
             ean.default_writer_options['module_height'] = float(height_spinbox.get())
+            # text distance is the distance between the bottom of the barcode, and the top of the text in mm
             ean.default_writer_options['text_distance'] = 1
+            # font size is the text size in pt
             ean.default_writer_options['font_size'] = 6
+            # quiet zone is the distance from the ends of the barcode to the ends of the image in mm
             ean.default_writer_options['quiet_zone'] = 2
-            filename = ean.save("barcode " + str(upc_barcode_number))
-            list_of_temp_images.append(str(filename))
-            barcode_image = pil_Image.open(str(filename))
-            img_save = pil_ImageOps.expand(barcode_image, border=border_size, fill='white')
-            width, height = img_save.size
-            ws.column_dimensions['A'].width = int(math.ceil(float(width + border_size * 2) * .15))
+            filename = ean.save("barcode " + str(upc_barcode_number))  # save barcode image with generated filename
+            list_of_temp_images.append(str(filename))  # add image to list of files to remove after run
+            barcode_image = pil_Image.open(str(filename))  # open image as pil object
+            img_save = pil_ImageOps.expand(barcode_image, border=border_size, fill='white')  # add border around image
+            width, height = img_save.size  # get image size of barcode with border
+            # resize cell to size of image
+            ws.column_dimensions['A'].width = int(math.ceil(float(width) * .15))
+            ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
+            # write out image to file
             img_save.save("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
+            # add image to list of files to remove after run
             list_of_temp_images.append("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
+            # open image with as openpyxl image object
             img = OpenPyXlImage("barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
-            ws.row_dimensions[count].height = int(math.ceil(float(height + border_size * 2) * .75))
+            # attach image to cell
             img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
+            # add image to cell
             ws.add_image(img)
             # This save in the loop frees references to the barcode images,
             #  so that python's garbage collector can clear them
@@ -137,13 +151,13 @@ old_workbook_label.pack(anchor='w')
 new_workbook_label.pack(anchor='w')
 size_spinbox_dpi_label = Label(master=size_spinbox_frame, text="Barcode DPI:", )
 size_spinbox_dpi_label.grid(row=0, column=0, sticky=W + E)
-size_spinbox_dpi_label.columnconfigure(0, weight=1)
+size_spinbox_dpi_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
 size_spinbox_height_label = Label(master=size_spinbox_frame, text="Barcode Height:")
 size_spinbox_height_label.grid(row=1, column=0, sticky=W + E)
-size_spinbox_height_label.columnconfigure(0, weight=1)
+size_spinbox_height_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
 border_spinbox_label = Label(master=size_spinbox_frame, text="Barcode Border:")
 border_spinbox_label.grid(row=2, column=0, sticky=W + E)
-border_spinbox_label.columnconfigure(0, weight=1)
+border_spinbox_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
 dpi_spinbox.grid(row=0, column=1, sticky=E)
 height_spinbox.grid(row=1, column=1, sticky=E)
 border_spinbox.grid(row=2, column=1, sticky=E)
