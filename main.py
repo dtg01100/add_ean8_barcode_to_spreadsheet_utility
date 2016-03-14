@@ -15,7 +15,7 @@ import argparse
 
 root_window = Tk()
 
-root_window.title("Barcode Insert Utility")
+root_window.title("Barcode Insert Utility (Beta)")
 
 old_workbook_path = ""
 new_workbook_path = ""
