@@ -14,7 +14,12 @@ import argparse
 
 root_window = Tk()
 
-root_window.title("Barcode Insert Utility (Beta)")
+launch_options = argparse.ArgumentParser()
+launch_options.add_argument('-d', '--debug', action='store_true')
+args = launch_options.parse_args()
+
+root_window.title("Barcode Insert Utility (Beta) (Debug)") if args.debug else root_window.title(
+    "Barcode Insert Utility (Beta)")
 
 old_workbook_path = ""
 new_workbook_path = ""
@@ -22,10 +27,6 @@ new_workbook_path = ""
 program_launch_cwd = os.getcwd()
 
 tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility')
-
-launch_options = argparse.ArgumentParser()
-launch_options.add_argument('-d', '--debug', action='store_true')
-args = launch_options.parse_args()
 
 if args.debug:
     import sys
@@ -65,6 +66,11 @@ def select_folder_old_new_wrapper(selection):
         process_workbook_button.configure(state=NORMAL, text="Process Workbook")
 
 
+def print_if_debug(string):
+    if args.debug:
+        print(string)
+
+
 def do_process_workbook():
     wb = openpyxl.load_workbook(old_workbook_path)
     ws = wb.worksheets[0]
@@ -77,7 +83,9 @@ def do_process_workbook():
     for _ in ws.iter_rows():  # iterate over all rows in current worksheet
         try:
             # get code from column "B", on current row, add a zero to the end to make seven digits
+            print_if_debug("getting cell contents on line number " + str(count))
             upc_barcode_number = ws["B" + str(count)].value + "0"
+            print_if_debug("cell contents are: " + upc_barcode_number)
             # select barcode type, specify barcode, and select image writer to save as png
             ean = barcode.get('ean8', upc_barcode_number, writer=ImageWriter())
             # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
@@ -92,10 +100,15 @@ def do_process_workbook():
             # quiet zone is the distance from the ends of the barcode to the ends of the image in mm
             ean.default_writer_options['quiet_zone'] = 2
             # save barcode image with generated filename
+            print_if_debug("generating barcode image")
             filename = ean.save(os.path.join(tempdir, "barcode " + str(upc_barcode_number)))
+            print_if_debug("success, barcode image path is: " + filename)
             # add image to list of files to remove after run
             list_of_temp_images.append(str(filename))
+            print_if_debug("opening " + str(filename) + " to add border")
             barcode_image = pil_Image.open(str(filename))  # open image as pil object
+            print_if_debug("success")
+            print_if_debug("adding barcode and saving")
             img_save = pil_ImageOps.expand(barcode_image, border=border_size, fill='white')  # add border around image
             width, height = img_save.size  # get image size of barcode with border
             # resize cell to size of image
@@ -104,20 +117,27 @@ def do_process_workbook():
             # write out image to file
             final_barcode_path = os.path.join(tempdir, "barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
             img_save.save(final_barcode_path)
+            print_if_debug("success, final barcode path is: " + final_barcode_path)
             # add image to list of files to remove after run
             list_of_temp_images.append(final_barcode_path)
             # open image with as openpyxl image object
+            print_if_debug("opening " + final_barcode_path + " to insert into output spreadsheet")
             img = OpenPyXlImage(final_barcode_path)
+            print_if_debug("success")
             # attach image to cell
+            print_if_debug("adding image to cell")
             img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
             # add image to cell
             ws.add_image(img)
+            print_if_debug("success")
             # This save in the loop frees references to the barcode images,
             #  so that python's garbage collector can clear them
-            if save_counter == 500:
+            if save_counter == 150:
                 # noinspection PyBroadException
                 try:
+                    print_if_debug("saving intermediate workbook to free file handles")
                     wb.save(new_workbook_path)
+                    print_if_debug("success")
                 except:
                     print("Cannot write to output file")
                 save_counter = 1
@@ -132,9 +152,18 @@ def do_process_workbook():
     progress_bar_frame.update()
     # noinspection PyBroadException
     try:
+        print_if_debug("saving workbook to file")
         wb.save(new_workbook_path)
+        print_if_debug("success")
     except:
         print("Cannot write to output file")
+    finally:
+        for line in list_of_temp_images:
+            try:
+                print_if_debug("deleting image: " + line)
+                os.remove(line)
+            except Exception, error:
+                print error
 
     progress_bar.configure(value=0)
     progress_bar_frame.update()
