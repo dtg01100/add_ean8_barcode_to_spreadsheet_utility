@@ -11,6 +11,7 @@ from ttk import *
 from tkFileDialog import *
 import tempfile
 import argparse
+import textwrap
 
 root_window = Tk()
 
@@ -64,11 +65,13 @@ def select_folder_old_new_wrapper(selection):
     if selection is "old":
         old_workbook_path = askopenfilename(initialdir=os.path.expanduser('~'))
         if os.path.exists(old_workbook_path):
-            old_workbook_label.configure(text=old_workbook_path)
+            old_workbook_path_wrapped = '\n'.join(textwrap.wrap(old_workbook_path, width=75, replace_whitespace=False))
+            old_workbook_label.configure(text=old_workbook_path_wrapped)
     else:
         new_workbook_path = asksaveasfilename(initialdir=os.path.expanduser('~'))
         if os.path.exists(os.path.dirname(new_workbook_path)):
-            new_workbook_label.configure(text=new_workbook_path)
+            new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
+            new_workbook_label.configure(text=new_workbook_path_wrapped)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
         process_workbook_button.configure(state=NORMAL, text="Process Workbook")
 
@@ -165,12 +168,18 @@ def do_process_workbook():
     except:
         print("Cannot write to output file")
     finally:
+        progress_bar.configure(maximum=len(list_of_temp_images))
+        count = 1
         for line in list_of_temp_images:
             try:
                 print_if_debug("deleting image: " + line)
                 os.remove(line)
             except Exception, error:
                 print error
+            finally:
+                progress_bar.configure(value=count)
+                count += 1
+                progress_bar_frame.update()
 
     progress_bar.configure(value=0)
     progress_bar_frame.update()
