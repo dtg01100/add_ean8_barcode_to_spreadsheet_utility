@@ -10,6 +10,7 @@ from Tkinter import *
 from ttk import *
 from tkFileDialog import *
 import tempfile
+import argparse
 
 
 root_window = Tk()
@@ -19,8 +20,33 @@ root_window.title("Barcode Insert Utility")
 old_workbook_path = ""
 new_workbook_path = ""
 
+program_launch_cwd = os.getcwd()
 
 tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility')
+
+launch_options = argparse.ArgumentParser()
+launch_options.add_argument('-d', '--debug', action='store_true')
+args = launch_options.parse_args()
+
+if args.debug:
+    import sys
+
+    class Logger(object):
+        def __init__(self):
+            self.terminal = sys.stdout
+            self.log = open("logfile.log", "a")
+
+        def write(self, message):
+            self.terminal.write(message)
+            self.log.write(message)
+
+        def flush(self):
+            #this flush method is needed for python 3 compatibility.
+            #this handles the flush command by doing nothing.
+            #you might want to specify some extra behavior here.
+            pass
+
+    sys.stdout = Logger()
 
 
 def select_folder_old_new_wrapper(selection):
