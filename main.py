@@ -175,6 +175,7 @@ def do_process_workbook():
             try:
                 print_if_debug("deleting image: " + line)
                 os.remove(line)
+                print_if_debug("success")
             except Exception, error:
                 print error
             finally:
