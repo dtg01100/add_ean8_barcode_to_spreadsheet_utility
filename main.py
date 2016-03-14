@@ -34,8 +34,6 @@ new_workbook_path = ""
 
 program_launch_cwd = os.getcwd()
 
-tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility')
-
 if args.log:
     import sys
 
@@ -82,6 +80,7 @@ def print_if_debug(string):
 
 
 def do_process_workbook():
+    tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility')
     wb = openpyxl.load_workbook(old_workbook_path)
     ws = wb.worksheets[0]
     count = 1
@@ -180,6 +179,7 @@ def do_process_workbook():
                 progress_bar.configure(value=count)
                 count += 1
                 progress_bar_frame.update()
+        os.rmdir(tempdir)
 
     progress_bar.configure(value=0)
     progress_bar_frame.update()
