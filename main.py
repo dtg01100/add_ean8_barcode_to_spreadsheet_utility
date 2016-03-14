@@ -20,7 +20,7 @@ old_workbook_path = ""
 new_workbook_path = ""
 
 
-tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility', )
+tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility')
 
 
 def select_folder_old_new_wrapper(selection):
