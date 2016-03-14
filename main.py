@@ -12,7 +12,6 @@ from tkFileDialog import *
 import tempfile
 import argparse
 
-
 root_window = Tk()
 
 root_window.title("Barcode Insert Utility (Beta)")
@@ -31,6 +30,7 @@ args = launch_options.parse_args()
 if args.debug:
     import sys
 
+
     class Logger(object):
         def __init__(self):
             self.terminal = sys.stdout
@@ -41,10 +41,11 @@ if args.debug:
             self.log.write(message)
 
         def flush(self):
-            #this flush method is needed for python 3 compatibility.
-            #this handles the flush command by doing nothing.
-            #you might want to specify some extra behavior here.
+            # this flush method is needed for python 3 compatibility.
+            # this handles the flush command by doing nothing.
+            # you might want to specify some extra behavior here.
             pass
+
 
     sys.stdout = Logger()
 
@@ -114,7 +115,7 @@ def do_process_workbook():
             # This save in the loop frees references to the barcode images,
             #  so that python's garbage collector can clear them
             if save_counter == 500:
-                    # noinspection PyBroadException
+                # noinspection PyBroadException
                 try:
                     wb.save(new_workbook_path)
                 except:
