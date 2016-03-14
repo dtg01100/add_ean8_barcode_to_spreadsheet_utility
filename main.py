@@ -16,10 +16,17 @@ root_window = Tk()
 
 launch_options = argparse.ArgumentParser()
 launch_options.add_argument('-d', '--debug', action='store_true')
+launch_options.add_argument('-l', '--log', action='store_true')
 args = launch_options.parse_args()
 
-root_window.title("Barcode Insert Utility (Beta) (Debug)") if args.debug else root_window.title(
-    "Barcode Insert Utility (Beta)")
+title_builder = "Barcode Insert Utility (Beta)"
+
+if args.debug:
+    title_builder += " (Debug)"
+if args.log:
+    title_builder += " (Logged)"
+
+root_window.title(title_builder)
 
 old_workbook_path = ""
 new_workbook_path = ""
@@ -28,7 +35,7 @@ program_launch_cwd = os.getcwd()
 
 tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility')
 
-if args.debug:
+if args.log:
     import sys
 
 
