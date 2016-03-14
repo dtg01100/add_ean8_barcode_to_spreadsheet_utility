@@ -80,7 +80,9 @@ def print_if_debug(string):
 
 
 def do_process_workbook():
+    print_if_debug("creating temp directory")
     tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility')
+    print_if_debug("temp directory created as: " + tempdir)
     wb = openpyxl.load_workbook(old_workbook_path)
     ws = wb.worksheets[0]
     count = 1
@@ -179,7 +181,9 @@ def do_process_workbook():
                 progress_bar.configure(value=count)
                 count += 1
                 progress_bar_frame.update()
+        print_if_debug("removing temp folder " + tempdir)
         os.rmdir(tempdir)
+        print_if_debug("success")
 
     progress_bar.configure(value=0)
     progress_bar_frame.update()
