@@ -15,8 +15,8 @@ import argparse
 root_window = Tk()
 
 launch_options = argparse.ArgumentParser()
-launch_options.add_argument('-d', '--debug', action='store_true')
-launch_options.add_argument('-l', '--log', action='store_true')
+launch_options.add_argument('-d', '--debug', action='store_true', help="print debug output to stdout")
+launch_options.add_argument('-l', '--log', action='store_true', help="write stdout to log file")
 args = launch_options.parse_args()
 
 title_builder = "Barcode Insert Utility (Beta)"
