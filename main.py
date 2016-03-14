@@ -93,7 +93,7 @@ def do_process_workbook():
             # save barcode image with generated filename
             filename = ean.save(os.path.join(tempdir, "barcode " + str(upc_barcode_number)))
             # add image to list of files to remove after run
-            list_of_temp_images.append(os.path.abspath("barcode " + str(upc_barcode_number) + '.png'))
+            list_of_temp_images.append(str(filename))
             barcode_image = pil_Image.open(str(filename))  # open image as pil object
             img_save = pil_ImageOps.expand(barcode_image, border=border_size, fill='white')  # add border around image
             width, height = img_save.size  # get image size of barcode with border
@@ -101,11 +101,12 @@ def do_process_workbook():
             ws.column_dimensions['A'].width = int(math.ceil(float(width) * .15))
             ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
             # write out image to file
-            img_save.save(os.path.join(tempdir, "barcode " + str(upc_barcode_number) + 'BORDER' + '.png'))
+            final_barcode_path = os.path.join(tempdir, "barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
+            img_save.save(final_barcode_path)
             # add image to list of files to remove after run
-            list_of_temp_images.append(os.path.abspath("barcode " + str(upc_barcode_number) + 'BORDER' + '.png'))
+            list_of_temp_images.append(final_barcode_path)
             # open image with as openpyxl image object
-            img = OpenPyXlImage(os.path.join(tempdir, "barcode " + str(upc_barcode_number) + 'BORDER' + '.png'))
+            img = OpenPyXlImage(final_barcode_path)
             # attach image to cell
             img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
             # add image to cell
