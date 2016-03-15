@@ -18,6 +18,8 @@ root_window = Tk()
 launch_options = argparse.ArgumentParser()
 launch_options.add_argument('-d', '--debug', action='store_true', help="print debug output to stdout")
 launch_options.add_argument('-l', '--log', action='store_true', help="write stdout to log file")
+launch_options.add_argument('-k', '--keep_barcode_files', action='store_true',
+                            help="write barcode files to working directory, and don't delete")
 args = launch_options.parse_args()
 
 title_builder = "Barcode Insert Utility (Beta)"
@@ -26,6 +28,8 @@ if args.debug:
     title_builder += " (Debug)"
 if args.log:
     title_builder += " (Logged)"
+if args.keep_barcode_files:
+    title_builder += " (Keep Barcodes)"
 
 root_window.title(title_builder)
 
@@ -81,7 +85,12 @@ def print_if_debug(string):
 
 def do_process_workbook():
     print_if_debug("creating temp directory")
-    tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility')
+    if not args.keep_barcode_files:
+        tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility')
+    else:
+        temp_dir_in_cwd = os.path.join(program_launch_cwd, 'barcode images')
+        os.mkdir(temp_dir_in_cwd)
+        tempdir = temp_dir_in_cwd
     print_if_debug("temp directory created as: " + tempdir)
     wb = openpyxl.load_workbook(old_workbook_path)
     ws = wb.worksheets[0]
@@ -169,22 +178,23 @@ def do_process_workbook():
     except:
         print("Cannot write to output file")
     finally:
-        progress_bar.configure(maximum=len(list_of_temp_images))
-        count = 1
-        for line in list_of_temp_images:
-            try:
-                print_if_debug("deleting image: " + line)
-                os.remove(line)
-                print_if_debug("success")
-            except Exception, error:
-                print error
-            finally:
-                progress_bar.configure(value=count)
-                count += 1
-                progress_bar_frame.update()
-        print_if_debug("removing temp folder " + tempdir)
-        os.rmdir(tempdir)
-        print_if_debug("success")
+        if not args.keep_barcode_files:
+            progress_bar.configure(maximum=len(list_of_temp_images))
+            count = 1
+            for line in list_of_temp_images:
+                try:
+                    print_if_debug("deleting image: " + line)
+                    os.remove(line)
+                    print_if_debug("success")
+                except Exception, error:
+                    print error
+                finally:
+                    progress_bar.configure(value=count)
+                    count += 1
+                    progress_bar_frame.update()
+            print_if_debug("removing temp folder " + tempdir)
+            os.rmdir(tempdir)
+            print_if_debug("success")
 
     progress_bar.configure(value=0)
     progress_bar_frame.update()
