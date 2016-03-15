@@ -23,18 +23,23 @@ launch_options.add_argument('--keep_barcodes_in_home', action='store_true',
 launch_options.add_argument('--keep_barcode_files', action='store_true', help="don't delete temp files")
 args = launch_options.parse_args()
 
-title_builder = "Barcode Insert Utility (Beta)"
+root_window.title("Barcode Insert Utility (Beta)")
 
+flags_list_string = "Flags="
+flags_count = 0
 if args.debug:
-    title_builder += " (Debug)"
+    flags_list_string += "(Debug)"
+    flags_count += 1
 if args.log:
-    title_builder += " (Logged)"
+    flags_list_string += "(Logged)"
+    flags_count += 1
 if args.keep_barcodes_in_home:
-    title_builder += " (Barcodes In Working Directory)"
+    flags_list_string += "(Barcodes In Working Directory)"
+    flags_count += 1
 if args.keep_barcode_files:
-    title_builder += " (Keep Barcodes)"
+    flags_list_string += "(Keep Barcodes)"
+    flags_count += 1
 
-root_window.title(title_builder)
 
 old_workbook_path = ""
 new_workbook_path = ""
@@ -262,15 +267,17 @@ process_workbook_button.pack()
 progress_bar = Progressbar(master=progress_bar_frame)
 progress_bar.pack()
 
+if flags_count != 0:
+    Label(root_window, text=flags_list_string).grid(row=0, column=0, columnspan=2)
 old_workbook_file_frame.pack(anchor='w')
 new_workbook_file_frame.pack(anchor='w')
-both_workbook_frame.grid(row=0, column=0, sticky=W)
+both_workbook_frame.grid(row=1, column=0, sticky=W)
 both_workbook_frame.columnconfigure(0, weight=1)
-size_spinbox_frame.grid(row=0, column=1, sticky=E + N)
+size_spinbox_frame.grid(row=1, column=1, sticky=E + N)
 size_spinbox_frame.columnconfigure(0, weight=1)
 go_button_frame.pack(side=LEFT, anchor='w')
 progress_bar_frame.pack(side=RIGHT, anchor='e')
-go_and_progress_frame.grid(row=1, column=0, columnspan=2, sticky=W + E)
+go_and_progress_frame.grid(row=2, column=0, columnspan=2, sticky=W + E)
 go_and_progress_frame.columnconfigure(0, weight=1)
 root_window.columnconfigure(0, weight=1)
 
