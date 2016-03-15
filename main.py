@@ -18,8 +18,9 @@ root_window = Tk()
 launch_options = argparse.ArgumentParser()
 launch_options.add_argument('-d', '--debug', action='store_true', help="print debug output to stdout")
 launch_options.add_argument('-l', '--log', action='store_true', help="write stdout to log file")
-launch_options.add_argument('-k', '--keep_barcode_files', action='store_true',
-                            help="write barcode files to working directory, and don't delete")
+launch_options.add_argument('--keep_barcodes_in_home', action='store_true',
+                            help="temp folder in working directory")
+launch_options.add_argument('--keep_barcode_files', action='store_true', help="don't delete temp files")
 args = launch_options.parse_args()
 
 title_builder = "Barcode Insert Utility (Beta)"
@@ -28,6 +29,8 @@ if args.debug:
     title_builder += " (Debug)"
 if args.log:
     title_builder += " (Logged)"
+if args.keep_barcodes_in_home:
+    title_builder += " (Barcodes In Working Directory)"
 if args.keep_barcode_files:
     title_builder += " (Keep Barcodes)"
 
@@ -85,8 +88,8 @@ def print_if_debug(string):
 
 def do_process_workbook():
     print_if_debug("creating temp directory")
-    if not args.keep_barcode_files:
-        tempdir = tempfile.mkdtemp(prefix='barcodeinsertutility')
+    if not args.keep_barcodes_in_home:
+        tempdir = tempfile.mkdtemp()
     else:
         temp_dir_in_cwd = os.path.join(program_launch_cwd, 'barcode images')
         os.mkdir(temp_dir_in_cwd)
