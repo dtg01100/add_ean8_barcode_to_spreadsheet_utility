@@ -68,13 +68,15 @@ def select_folder_old_new_wrapper(selection):
     global old_workbook_path
     global new_workbook_path
     if selection is "old":
-        old_workbook_path = askopenfilename(initialdir=os.path.expanduser('~'))
-        if os.path.exists(old_workbook_path):
+        old_workbook_path_proposed = askopenfilename(initialdir=os.path.expanduser('~'))
+        if os.path.exists(old_workbook_path_proposed):
+            old_workbook_path = old_workbook_path_proposed
             old_workbook_path_wrapped = '\n'.join(textwrap.wrap(old_workbook_path, width=75, replace_whitespace=False))
             old_workbook_label.configure(text=old_workbook_path_wrapped)
     else:
-        new_workbook_path = asksaveasfilename(initialdir=os.path.expanduser('~'))
-        if os.path.exists(os.path.dirname(new_workbook_path)):
+        new_workbook_path_proposed = asksaveasfilename(initialdir=os.path.expanduser('~'))
+        if os.path.exists(os.path.dirname(new_workbook_path_proposed)):
+            new_workbook_path = new_workbook_path_proposed
             new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
             new_workbook_label.configure(text=new_workbook_path_wrapped)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
