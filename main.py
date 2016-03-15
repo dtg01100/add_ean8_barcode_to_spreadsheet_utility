@@ -63,6 +63,9 @@ if args.log:
 
     sys.stdout = Logger()
 
+if args.debug:
+    print(launch_options.parse_args())
+
 
 def select_folder_old_new_wrapper(selection):
     global old_workbook_path
