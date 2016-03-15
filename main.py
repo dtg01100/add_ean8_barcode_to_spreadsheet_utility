@@ -230,8 +230,8 @@ old_workbook_selection_button = Button(master=old_workbook_file_frame, text="Sel
 new_workbook_selection_button = Button(master=new_workbook_file_frame, text="Select New Workbook",
                                        command=lambda: select_folder_old_new_wrapper("new")).pack(anchor='w')
 
-old_workbook_label = Label(master=old_workbook_file_frame, text="No File Selected")
-new_workbook_label = Label(master=new_workbook_file_frame, text="No File Selected")
+old_workbook_label = Label(master=old_workbook_file_frame, text="No File Selected", relief=SUNKEN)
+new_workbook_label = Label(master=new_workbook_file_frame, text="No File Selected", relief=SUNKEN)
 old_workbook_label.pack(anchor='w')
 new_workbook_label.pack(anchor='w')
 size_spinbox_dpi_label = Label(master=size_spinbox_frame, text="Barcode DPI:", anchor=E)
