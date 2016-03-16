@@ -190,25 +190,21 @@ def do_process_workbook():
             print_if_debug("success")
             # This save in the loop frees references to the barcode images,
             #  so that python's garbage collector can clear them
-            if save_counter == 300:
+            if save_counter == 150:
                 # noinspection PyBroadException
                 try:
                     print_if_debug("saving intermediate workbook to free file handles")
                     save_thread = threading.Thread(target=wb.save, args=(new_workbook_path, ))
                     save_thread.start()
-                    progress_bar.configure(mode='indeterminate')
-                    progress_bar.start()
                     update_gui_thread_object = threading.Thread(target=update_gui_thread)
                     update_gui_thread_keep_alive = True
                     update_gui_thread_object.start()
                     save_thread.join()
-                    update_gui_thread_keep_alive = False
-                    progress_bar.stop()
-                    progress_bar.configure(maximum=ws.max_row, value=count, mode='determinate')
                     print_if_debug("success")
                 except:
                     print("Cannot write to output file")
                 save_counter = 1
+                update_gui_thread_keep_alive = False
             save_counter += 1
         except Exception, error:
             print(error)
@@ -229,7 +225,6 @@ def do_process_workbook():
         update_gui_thread_keep_alive = True
         update_gui_thread_object.start()
         save_thread.join()
-        update_gui_thread_keep_alive = False
         print_if_debug("success")
     except:
         print("Cannot write to output file")
@@ -238,6 +233,7 @@ def do_process_workbook():
             print_if_debug("removing temp folder " + tempdir)
             shutil.rmtree(tempdir)
             print_if_debug("success")
+            update_gui_thread_keep_alive = False
 
     progress_bar.stop()
     progress_bar.configure(maximum=ws.max_row, value=0, mode='determinate')
