@@ -77,16 +77,25 @@ if args.debug:
 def select_folder_old_new_wrapper(selection):
     global old_workbook_path
     global new_workbook_path
+    global update_gui_thread_keep_alive
     if selection is "old":
         old_workbook_path_proposed = askopenfilename(initialdir=os.path.expanduser('~'),
                                                      filetypes=[("Excel Spreadsheet", "*.xlsx")])
         file_is_xlsx = False
         if os.path.exists(old_workbook_path_proposed):
+            progress_bar.configure(mode='indeterminate')
+            progress_bar.start()
+            update_gui_thread_object = threading.Thread(target=update_gui_thread)
+            update_gui_thread_keep_alive = True
+            update_gui_thread_object.start()
             try:
                 _ = openpyxl.load_workbook(old_workbook_path_proposed)
                 file_is_xlsx = True
             except Exception, error:
                 print(error)
+            progress_bar.stop()
+            progress_bar.configure(value=0, mode='determinate')
+            update_gui_thread_keep_alive = False
         if os.path.exists(old_workbook_path_proposed) and file_is_xlsx is True:
             old_workbook_path = old_workbook_path_proposed
             old_workbook_path_wrapped = '\n'.join(textwrap.wrap(old_workbook_path, width=75, replace_whitespace=False))
