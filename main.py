@@ -195,10 +195,10 @@ def do_process_workbook():
                 try:
                     print_if_debug("saving intermediate workbook to free file handles")
                     save_thread = threading.Thread(target=wb.save, args=(new_workbook_path, ))
-                    save_thread.start()
                     update_gui_thread_object = threading.Thread(target=update_gui_thread)
                     update_gui_thread_keep_alive = True
                     update_gui_thread_object.start()
+                    save_thread.start()
                     save_thread.join()
                     print_if_debug("success")
                 except:
@@ -218,12 +218,12 @@ def do_process_workbook():
     try:
         print_if_debug("saving workbook to file")
         save_thread = threading.Thread(target=wb.save, args=(new_workbook_path, ))
-        save_thread.start()
         progress_bar.configure(mode='indeterminate')
         progress_bar.start()
         update_gui_thread_object = threading.Thread(target=update_gui_thread)
         update_gui_thread_keep_alive = True
         update_gui_thread_object.start()
+        save_thread.start()
         save_thread.join()
         print_if_debug("success")
     except:
