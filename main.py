@@ -1,3 +1,5 @@
+import time
+import shutil
 import barcode
 import openpyxl
 from openpyxl.drawing.image import Image as OpenPyXlImage
@@ -12,6 +14,7 @@ from tkFileDialog import *
 import tempfile
 import argparse
 import textwrap
+import threading
 
 root_window = Tk()
 
@@ -104,7 +107,15 @@ def print_if_debug(string):
         print(string)
 
 
+def update_gui_thread():
+    global update_gui_thread_keep_alive
+    while update_gui_thread_keep_alive:
+        progress_bar_frame.update()
+        time.sleep(0.05)
+
+
 def do_process_workbook():
+    global update_gui_thread_keep_alive
     print_if_debug("creating temp directory")
     if not args.keep_barcodes_in_home:
         tempdir = tempfile.mkdtemp()
@@ -118,7 +129,6 @@ def do_process_workbook():
     count = 1
     save_counter = 1
     progress_bar.configure(maximum=ws.max_row, value=count)
-    list_of_temp_images = []
     border_size = int(border_spinbox.get())
 
     for _ in ws.iter_rows():  # iterate over all rows in current worksheet
@@ -145,7 +155,6 @@ def do_process_workbook():
             filename = ean.save(os.path.join(tempdir, "barcode " + str(upc_barcode_number)))
             print_if_debug("success, barcode image path is: " + filename)
             # add image to list of files to remove after run
-            list_of_temp_images.append(str(filename))
             print_if_debug("opening " + str(filename) + " to add border")
             barcode_image = pil_Image.open(str(filename))  # open image as pil object
             print_if_debug("success")
@@ -160,7 +169,6 @@ def do_process_workbook():
             img_save.save(final_barcode_path)
             print_if_debug("success, final barcode path is: " + final_barcode_path)
             # add image to list of files to remove after run
-            list_of_temp_images.append(final_barcode_path)
             # open image with as openpyxl image object
             print_if_debug("opening " + final_barcode_path + " to insert into output spreadsheet")
             img = OpenPyXlImage(final_barcode_path)
@@ -173,11 +181,21 @@ def do_process_workbook():
             print_if_debug("success")
             # This save in the loop frees references to the barcode images,
             #  so that python's garbage collector can clear them
-            if save_counter == 150:
+            if save_counter == 300:
                 # noinspection PyBroadException
                 try:
                     print_if_debug("saving intermediate workbook to free file handles")
-                    wb.save(new_workbook_path)
+                    save_thread = threading.Thread(target=wb.save, args=(new_workbook_path, ))
+                    save_thread.start()
+                    progress_bar.configure(mode='indeterminate')
+                    progress_bar.start()
+                    update_gui_thread_object = threading.Thread(target=update_gui_thread)
+                    update_gui_thread_keep_alive = True
+                    update_gui_thread_object.start()
+                    save_thread.join()
+                    update_gui_thread_keep_alive = False
+                    progress_bar.stop()
+                    progress_bar.configure(maximum=ws.max_row, value=count, mode='determinate')
                     print_if_debug("success")
                 except:
                     print("Cannot write to output file")
@@ -194,30 +212,26 @@ def do_process_workbook():
     # noinspection PyBroadException
     try:
         print_if_debug("saving workbook to file")
-        wb.save(new_workbook_path)
+        save_thread = threading.Thread(target=wb.save, args=(new_workbook_path, ))
+        save_thread.start()
+        progress_bar.configure(mode='indeterminate')
+        progress_bar.start()
+        update_gui_thread_object = threading.Thread(target=update_gui_thread)
+        update_gui_thread_keep_alive = True
+        update_gui_thread_object.start()
+        save_thread.join()
+        update_gui_thread_keep_alive = False
         print_if_debug("success")
     except:
         print("Cannot write to output file")
     finally:
         if not args.keep_barcode_files:
-            progress_bar.configure(maximum=len(list_of_temp_images))
-            count = 1
-            for line in list_of_temp_images:
-                try:
-                    print_if_debug("deleting image: " + line)
-                    os.remove(line)
-                    print_if_debug("success")
-                except Exception, error:
-                    print error
-                finally:
-                    progress_bar.configure(value=count)
-                    count += 1
-                    progress_bar_frame.update()
             print_if_debug("removing temp folder " + tempdir)
-            os.rmdir(tempdir)
+            shutil.rmtree(tempdir)
             print_if_debug("success")
 
-    progress_bar.configure(value=0)
+    progress_bar.stop()
+    progress_bar.configure(maximum=ws.max_row, value=0, mode='determinate')
     progress_bar_frame.update()
 
 
