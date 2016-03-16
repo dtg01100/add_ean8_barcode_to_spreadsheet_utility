@@ -40,7 +40,6 @@ if args.keep_barcode_files:
     flags_list_string += "(Keep Barcodes)"
     flags_count += 1
 
-
 old_workbook_path = ""
 new_workbook_path = ""
 
@@ -76,13 +75,22 @@ def select_folder_old_new_wrapper(selection):
     global old_workbook_path
     global new_workbook_path
     if selection is "old":
-        old_workbook_path_proposed = askopenfilename(initialdir=os.path.expanduser('~'))
+        old_workbook_path_proposed = askopenfilename(initialdir=os.path.expanduser('~'),
+                                                     filetypes=[("Excel Spreadsheet", "*.xlsx")])
+        file_is_xlsx = False
         if os.path.exists(old_workbook_path_proposed):
+            try:
+                _ = openpyxl.load_workbook(old_workbook_path_proposed)
+                file_is_xlsx = True
+            except Exception, error:
+                print(error)
+        if os.path.exists(old_workbook_path_proposed) and file_is_xlsx is True:
             old_workbook_path = old_workbook_path_proposed
             old_workbook_path_wrapped = '\n'.join(textwrap.wrap(old_workbook_path, width=75, replace_whitespace=False))
             old_workbook_label.configure(text=old_workbook_path_wrapped)
     else:
-        new_workbook_path_proposed = asksaveasfilename(initialdir=os.path.expanduser('~'))
+        new_workbook_path_proposed = asksaveasfilename(initialdir=os.path.expanduser('~'), defaultextension='.xlsx',
+                                                       filetypes=[("Excel Spreadsheet", "*.xlsx")])
         if os.path.exists(os.path.dirname(new_workbook_path_proposed)):
             new_workbook_path = new_workbook_path_proposed
             new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
