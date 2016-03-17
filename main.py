@@ -161,7 +161,8 @@ def do_process_workbook():
             ean.default_writer_options['quiet_zone'] = 2
             # save barcode image with generated filename
             print_if_debug("generating barcode image")
-            filename = ean.save(os.path.join(tempdir, "barcode " + str(upc_barcode_number)))
+            initial_temp_file_path = tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False)
+            filename = ean.save(initial_temp_file_path.name)
             print_if_debug("success, barcode image path is: " + filename)
             # add image to list of files to remove after run
             print_if_debug("opening " + str(filename) + " to add border")
@@ -174,13 +175,13 @@ def do_process_workbook():
             ws.column_dimensions['A'].width = int(math.ceil(float(width) * .15))
             ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
             # write out image to file
-            final_barcode_path = os.path.join(tempdir, "barcode " + str(upc_barcode_number) + 'BORDER' + '.png')
-            img_save.save(final_barcode_path)
-            print_if_debug("success, final barcode path is: " + final_barcode_path)
+            final_barcode_path = tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False)
+            img_save.save(final_barcode_path.name)
+            print_if_debug("success, final barcode path is: " + final_barcode_path.name)
             # add image to list of files to remove after run
             # open image with as openpyxl image object
-            print_if_debug("opening " + final_barcode_path + " to insert into output spreadsheet")
-            img = OpenPyXlImage(final_barcode_path)
+            print_if_debug("opening " + final_barcode_path.name + " to insert into output spreadsheet")
+            img = OpenPyXlImage(final_barcode_path.name)
             print_if_debug("success")
             # attach image to cell
             print_if_debug("adding image to cell")
