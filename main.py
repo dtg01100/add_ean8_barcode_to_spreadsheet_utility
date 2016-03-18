@@ -93,7 +93,7 @@ def select_folder_old_new_wrapper(selection):
             update_gui_thread_keep_alive = True
             update_gui_thread_object.start()
             try:
-                openpyxl.load_workbook(old_workbook_path_proposed)
+                openpyxl.load_workbook(old_workbook_path_proposed, read_only=True)
                 file_is_xlsx = True
             except Exception, error:
                 print(error)
