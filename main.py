@@ -89,7 +89,7 @@ def select_folder_old_new_wrapper(selection):
             update_gui_thread_keep_alive = True
             update_gui_thread_object.start()
             try:
-                _ = openpyxl.load_workbook(old_workbook_path_proposed)
+                openpyxl.load_workbook(old_workbook_path_proposed)
                 file_is_xlsx = True
             except Exception, error:
                 print(error)
@@ -161,41 +161,42 @@ def do_process_workbook():
             ean.default_writer_options['quiet_zone'] = 2
             # save barcode image with generated filename
             print_if_debug("generating barcode image")
-            initial_temp_file_path = tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False)
-            filename = ean.save(initial_temp_file_path.name)
-            print_if_debug("success, barcode image path is: " + filename)
-            # add image to list of files to remove after run
-            print_if_debug("opening " + str(filename) + " to add border")
-            barcode_image = pil_Image.open(str(filename))  # open image as pil object
-            print_if_debug("success")
-            print_if_debug("adding barcode and saving")
-            img_save = pil_ImageOps.expand(barcode_image, border=border_size, fill='white')  # add border around image
-            width, height = img_save.size  # get image size of barcode with border
-            # resize cell to size of image
-            ws.column_dimensions['A'].width = int(math.ceil(float(width) * .15))
-            ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
-            # write out image to file
-            final_barcode_path = tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False)
-            img_save.save(final_barcode_path.name)
-            print_if_debug("success, final barcode path is: " + final_barcode_path.name)
-            # add image to list of files to remove after run
-            # open image with as openpyxl image object
-            print_if_debug("opening " + final_barcode_path.name + " to insert into output spreadsheet")
-            img = OpenPyXlImage(final_barcode_path.name)
-            print_if_debug("success")
-            # attach image to cell
-            print_if_debug("adding image to cell")
-            img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
-            # add image to cell
-            ws.add_image(img)
+            with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as initial_temp_file_path:
+                filename = ean.save(initial_temp_file_path.name[0:-4])
+                print_if_debug("success, barcode image path is: " + filename)
+                # add image to list of files to remove after run
+                print_if_debug("opening " + str(filename) + " to add border")
+                barcode_image = pil_Image.open(str(filename))  # open image as pil object
+                print_if_debug("success")
+                print_if_debug("adding barcode and saving")
+                img_save = pil_ImageOps.expand(barcode_image, border=border_size,
+                                               fill='white')  # add border around image
+                width, height = img_save.size  # get image size of barcode with border
+                # resize cell to size of image
+                ws.column_dimensions['A'].width = int(math.ceil(float(width) * .15))
+                ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
+                # write out image to file
+                with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as final_barcode_path:
+                    img_save.save(final_barcode_path.name)
+                    print_if_debug("success, final barcode path is: " + final_barcode_path.name)
+                    # add image to list of files to remove after run
+                    # open image with as openpyxl image object
+                    print_if_debug("opening " + final_barcode_path.name + " to insert into output spreadsheet")
+                    img = OpenPyXlImage(final_barcode_path.name)
+                    print_if_debug("success")
+                    # attach image to cell
+                    print_if_debug("adding image to cell")
+                    img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
+                    # add image to cell
+                    ws.add_image(img)
             print_if_debug("success")
             # This save in the loop frees references to the barcode images,
             #  so that python's garbage collector can clear them
-            if save_counter == 150:
+            if save_counter == 300:
                 # noinspection PyBroadException
                 try:
                     print_if_debug("saving intermediate workbook to free file handles")
-                    save_thread = threading.Thread(target=wb.save, args=(new_workbook_path, ))
+                    save_thread = threading.Thread(target=wb.save, args=(new_workbook_path,))
                     update_gui_thread_object = threading.Thread(target=update_gui_thread)
                     update_gui_thread_keep_alive = True
                     update_gui_thread_object.start()
@@ -218,7 +219,7 @@ def do_process_workbook():
     # noinspection PyBroadException
     try:
         print_if_debug("saving workbook to file")
-        save_thread = threading.Thread(target=wb.save, args=(new_workbook_path, ))
+        save_thread = threading.Thread(target=wb.save, args=(new_workbook_path,))
         progress_bar.configure(mode='indeterminate')
         progress_bar.start()
         update_gui_thread_object = threading.Thread(target=update_gui_thread)
