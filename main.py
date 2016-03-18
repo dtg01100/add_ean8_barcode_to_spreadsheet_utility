@@ -78,6 +78,10 @@ def select_folder_old_new_wrapper(selection):
     global old_workbook_path
     global new_workbook_path
     global update_gui_thread_keep_alive
+    for child in size_spinbox_frame.winfo_children():
+        child.configure(state=DISABLED)
+    new_workbook_selection_button.configure(state=DISABLED)
+    old_workbook_selection_button.configure(state=DISABLED)
     if selection is "old":
         old_workbook_path_proposed = askopenfilename(initialdir=os.path.expanduser('~'),
                                                      filetypes=[("Excel Spreadsheet", "*.xlsx")])
@@ -109,6 +113,10 @@ def select_folder_old_new_wrapper(selection):
             new_workbook_label.configure(text=new_workbook_path_wrapped)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
         process_workbook_button.configure(state=NORMAL, text="Process Workbook")
+    for child in size_spinbox_frame.winfo_children():
+        child.configure(state=NORMAL)
+    new_workbook_selection_button.configure(state=NORMAL)
+    old_workbook_selection_button.configure(state=NORMAL)
 
 
 def print_if_debug(string):
@@ -244,10 +252,18 @@ def do_process_workbook():
 
 def process_workbook_command_wrapper():
     global new_workbook_path
+    new_workbook_selection_button.configure(state=DISABLED)
+    old_workbook_selection_button.configure(state=DISABLED)
+    for child in size_spinbox_frame.winfo_children():
+        child.configure(state=DISABLED)
     process_workbook_button.configure(state=DISABLED, text="Processing Workbook")
     do_process_workbook()
     new_workbook_path = ""
     new_workbook_label.configure(text="No File Selected")
+    new_workbook_selection_button.configure(state=NORMAL)
+    old_workbook_selection_button.configure(state=NORMAL)
+    for child in size_spinbox_frame.winfo_children():
+        child.configure(state=NORMAL)
     process_workbook_button.configure(text="Done Processing Workbook")
 
 
@@ -264,10 +280,12 @@ height_spinbox = Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=R
 border_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=RIGHT)
 
 old_workbook_selection_button = Button(master=old_workbook_file_frame, text="Select Original Workbook",
-                                       command=lambda: select_folder_old_new_wrapper("old")).pack(anchor='w')
+                                       command=lambda: select_folder_old_new_wrapper("old"))
+old_workbook_selection_button.pack(anchor='w')
 
 new_workbook_selection_button = Button(master=new_workbook_file_frame, text="Select New Workbook",
-                                       command=lambda: select_folder_old_new_wrapper("new")).pack(anchor='w')
+                                       command=lambda: select_folder_old_new_wrapper("new"))
+new_workbook_selection_button.pack(anchor='w')
 
 old_workbook_label = Label(master=old_workbook_file_frame, text="No File Selected", relief=SUNKEN)
 new_workbook_label = Label(master=new_workbook_file_frame, text="No File Selected", relief=SUNKEN)
