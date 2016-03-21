@@ -217,7 +217,7 @@ def do_process_workbook():
                 update_gui_thread_keep_alive = False
             save_counter += 1
         except Exception, error:
-            print(error)
+            print_if_debug(error)
         finally:
             count += 1
             progress_bar.configure(value=count)
