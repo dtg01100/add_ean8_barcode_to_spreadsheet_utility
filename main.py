@@ -143,6 +143,7 @@ def do_process_workbook():
     print_if_debug("temp directory created as: " + tempdir)
     wb = openpyxl.load_workbook(old_workbook_path)
     ws = wb.worksheets[0]
+    wb.save(new_workbook_path)
     count = 1
     save_counter = 1
     progress_bar.configure(maximum=ws.max_row, value=count)
@@ -204,12 +205,17 @@ def do_process_workbook():
                 # noinspection PyBroadException
                 try:
                     print_if_debug("saving intermediate workbook to free file handles")
-                    save_thread = threading.Thread(target=wb.save, args=(new_workbook_path,))
                     update_gui_thread_object = threading.Thread(target=update_gui_thread)
                     update_gui_thread_keep_alive = True
                     update_gui_thread_object.start()
-                    save_thread.start()
-                    save_thread.join()
+                    save_is_complete = False
+                    while not save_is_complete:
+                        try:
+                            wb.save(new_workbook_path)
+                            save_is_complete = True
+                        except Exception, error:
+                            print_if_debug(error)
+                            print_if_debug("retrying")
                     print_if_debug("success")
                 except:
                     print("Cannot write to output file")
@@ -227,14 +233,19 @@ def do_process_workbook():
     # noinspection PyBroadException
     try:
         print_if_debug("saving workbook to file")
-        save_thread = threading.Thread(target=wb.save, args=(new_workbook_path,))
         progress_bar.configure(mode='indeterminate')
         progress_bar.start()
         update_gui_thread_object = threading.Thread(target=update_gui_thread)
         update_gui_thread_keep_alive = True
         update_gui_thread_object.start()
-        save_thread.start()
-        save_thread.join()
+        save_is_complete = False
+        while not save_is_complete:
+            try:
+                wb.save(new_workbook_path)
+                save_is_complete = True
+            except Exception, error:
+                print_if_debug(error)
+                print_if_debug("retrying")
         print_if_debug("success")
     except:
         print("Cannot write to output file")
@@ -257,9 +268,17 @@ def process_workbook_command_wrapper():
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=DISABLED)
     process_workbook_button.configure(state=DISABLED, text="Processing Workbook")
-    do_process_workbook()
+    root_window.update()
+    process_errors = False
+    try:
+        do_process_workbook()
+    except IOError, error:
+        print(error)
+        process_errors = True
+        new_workbook_label.configure(text="Error saving, select another output file.")
     new_workbook_path = ""
-    new_workbook_label.configure(text="No File Selected")
+    if not process_errors:
+        new_workbook_label.configure(text="No File Selected")
     new_workbook_selection_button.configure(state=NORMAL)
     old_workbook_selection_button.configure(state=NORMAL)
     for child in size_spinbox_frame.winfo_children():
