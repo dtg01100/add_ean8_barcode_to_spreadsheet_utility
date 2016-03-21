@@ -283,7 +283,6 @@ font_size_spinbox.delete(0, "end")
 font_size_spinbox.insert(0, 6)
 
 
-
 old_workbook_selection_button = Button(master=old_workbook_file_frame, text="Select Original Workbook",
                                        command=lambda: select_folder_old_new_wrapper("old"))
 old_workbook_selection_button.pack(anchor='w')
