@@ -164,7 +164,7 @@ def do_process_workbook():
             # text distance is the distance between the bottom of the barcode, and the top of the text in mm
             ean.default_writer_options['text_distance'] = 1
             # font size is the text size in pt
-            ean.default_writer_options['font_size'] = 6
+            ean.default_writer_options['font_size'] = int(font_size_spinbox.get())
             # quiet zone is the distance from the ends of the barcode to the ends of the image in mm
             ean.default_writer_options['quiet_zone'] = 2
             # save barcode image with generated filename
@@ -278,6 +278,11 @@ size_spinbox_frame = Frame(root_window)
 dpi_spinbox = Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=RIGHT)
 height_spinbox = Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=RIGHT)
 border_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=RIGHT)
+font_size_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=RIGHT)
+font_size_spinbox.delete(0, "end")
+font_size_spinbox.insert(0, 6)
+
+
 
 old_workbook_selection_button = Button(master=old_workbook_file_frame, text="Select Original Workbook",
                                        command=lambda: select_folder_old_new_wrapper("old"))
@@ -300,9 +305,13 @@ size_spinbox_height_label.columnconfigure(0, weight=1)  # make this stretch to f
 border_spinbox_label = Label(master=size_spinbox_frame, text="Barcode Border:", anchor=E)
 border_spinbox_label.grid(row=2, column=0, sticky=W + E)
 border_spinbox_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
+font_size_spinbox_label = Label(master=size_spinbox_frame, text="Barcode Text Size")
+font_size_spinbox_label.grid(row=3, column=0, sticky=W + E)
+font_size_spinbox_label.columnconfigure(0, weight=1)
 dpi_spinbox.grid(row=0, column=1, sticky=E)
 height_spinbox.grid(row=1, column=1, sticky=E)
 border_spinbox.grid(row=2, column=1, sticky=E)
+font_size_spinbox.grid(row=3, column=1, sticky=E)
 
 process_workbook_button = Button(master=go_button_frame, text="Select Workbooks",
                                  command=process_workbook_command_wrapper)
