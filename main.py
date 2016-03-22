@@ -5,12 +5,10 @@ import openpyxl
 from openpyxl.drawing.image import Image as OpenPyXlImage
 from PIL import Image as pil_Image
 import ImageOps as pil_ImageOps
-import os
 import math
 from barcode.writer import ImageWriter
-from Tkinter import *
-from ttk import *
-from tkFileDialog import *
+from tkinter.ttk import *
+from tkinter.filedialog import *
 import tempfile
 import argparse
 import textwrap
@@ -109,7 +107,7 @@ def select_folder_old_new_wrapper(selection):
             try:
                 openpyxl.load_workbook(old_workbook_path_proposed, read_only=True)
                 file_is_xlsx = True
-            except Exception, error:
+            except Exception as error:
                 print(error)
             progress_bar.stop()
             progress_bar.configure(value=0, mode='determinate')
@@ -117,14 +115,14 @@ def select_folder_old_new_wrapper(selection):
         if os.path.exists(old_workbook_path_proposed) and file_is_xlsx is True:
             old_workbook_path = old_workbook_path_proposed
             old_workbook_path_wrapped = '\n'.join(textwrap.wrap(old_workbook_path, width=75, replace_whitespace=False))
-            old_workbook_label.configure(text=old_workbook_path_wrapped)
+            old_workbook_label.configure(text=old_workbook_path_wrapped, justify=LEFT)
     else:
         new_workbook_path_proposed = asksaveasfilename(initialdir=os.path.expanduser('~'), defaultextension='.xlsx',
                                                        filetypes=[("Excel Spreadsheet", "*.xlsx")])
         if os.path.exists(os.path.dirname(new_workbook_path_proposed)):
             new_workbook_path = new_workbook_path_proposed
             new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
-            new_workbook_label.configure(text=new_workbook_path_wrapped)
+            new_workbook_label.configure(text=new_workbook_path_wrapped, justify=LEFT)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
         process_workbook_button.configure(state=NORMAL, text="Process Workbook")
     for child in size_spinbox_frame.winfo_children():
@@ -227,7 +225,7 @@ def do_process_workbook():
                         try:
                             wb.save(new_workbook_path)
                             save_is_complete = True
-                        except Exception, error:
+                        except Exception as error:
                             print_if_debug(error)
                             print_if_debug("retrying")
                     print_if_debug("success")
@@ -236,7 +234,7 @@ def do_process_workbook():
                 save_counter = 1
                 update_gui_thread_keep_alive = False
             save_counter += 1
-        except Exception, error:
+        except Exception as error:
             print_if_debug(error)
         finally:
             count += 1
@@ -257,7 +255,7 @@ def do_process_workbook():
             try:
                 wb.save(new_workbook_path)
                 save_is_complete = True
-            except Exception, error:
+            except Exception as error:
                 print_if_debug(error)
                 print_if_debug("retrying")
         print_if_debug("success")
@@ -286,7 +284,7 @@ def process_workbook_command_wrapper():
     process_errors = False
     try:
         do_process_workbook()
-    except IOError, error:
+    except IOError as error:
         print(error)
         process_errors = True
         new_workbook_label.configure(text="Error saving, select another output file.")
