@@ -15,6 +15,7 @@ import tempfile
 import argparse
 import textwrap
 import threading
+import platform
 
 root_window = Tk()
 
@@ -47,6 +48,15 @@ old_workbook_path = ""
 new_workbook_path = ""
 
 program_launch_cwd = os.getcwd()
+
+if platform.system() == 'Windows':
+    import win32file
+    file_limit = win32file._getmaxstdio()
+else:
+    import resource
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    file_limit = soft
+
 
 if args.log:
     import sys
@@ -201,7 +211,7 @@ def do_process_workbook():
             print_if_debug("success")
             # This save in the loop frees references to the barcode images,
             #  so that python's garbage collector can clear them
-            if save_counter == 300:
+            if save_counter == file_limit - 50:
                 # noinspection PyBroadException
                 try:
                     print_if_debug("saving intermediate workbook to free file handles")
