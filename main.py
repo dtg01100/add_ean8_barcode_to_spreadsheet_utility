@@ -1,5 +1,6 @@
 import time
 import shutil
+import warnings
 import barcode
 import openpyxl
 from openpyxl.drawing.image import Image as OpenPyXlImage
@@ -47,7 +48,6 @@ new_workbook_path = ""
 
 program_launch_cwd = os.getcwd()
 
-# noinspection PyBroadException
 try:
     if platform.system() == 'Windows':
         import win32file
@@ -56,7 +56,8 @@ try:
         import resource
         soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
         file_limit = soft
-except:
+except Exception as error:
+    warnings.warn("Getting open file limit failed with: " + str(error) + " setting internal file limit to 500")
     file_limit = 500
 
 
