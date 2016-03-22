@@ -49,13 +49,17 @@ new_workbook_path = ""
 
 program_launch_cwd = os.getcwd()
 
-if platform.system() == 'Windows':
-    import win32file
-    file_limit = win32file._getmaxstdio()
-else:
-    import resource
-    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
-    file_limit = soft
+# noinspection PyBroadException
+try:
+    if platform.system() == 'Windows':
+        import win32file
+        file_limit = win32file._getmaxstdio()
+    else:
+        import resource
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        file_limit = soft
+except:
+    file_limit = 500
 
 
 if args.log:
