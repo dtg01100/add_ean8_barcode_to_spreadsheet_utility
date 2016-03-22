@@ -108,8 +108,8 @@ def select_folder_old_new_wrapper(selection):
             try:
                 openpyxl.load_workbook(old_workbook_path_proposed, read_only=True)
                 file_is_xlsx = True
-            except Exception as error:
-                print(error)
+            except Exception as file_test_open_error:
+                print(file_test_open_error)
             progress_bar.stop()
             progress_bar.configure(value=0, mode='determinate')
             update_gui_thread_keep_alive = False
@@ -224,8 +224,8 @@ def do_process_workbook():
                         try:
                             wb.save(new_workbook_path)
                             save_is_complete = True
-                        except Exception as error:
-                            print_if_debug(error)
+                        except Exception as save_error:
+                            print_if_debug(save_error)
                             print_if_debug("retrying")
                     print_if_debug("success")
                 except:
@@ -233,8 +233,8 @@ def do_process_workbook():
                 save_counter = 1
                 update_gui_thread_keep_alive = False
             save_counter += 1
-        except Exception as error:
-            print_if_debug(error)
+        except Exception as save_error:
+            print_if_debug(save_error)
         finally:
             count += 1
             progress_bar.configure(value=count)
@@ -254,8 +254,8 @@ def do_process_workbook():
             try:
                 wb.save(new_workbook_path)
                 save_is_complete = True
-            except Exception as error:
-                print_if_debug(error)
+            except Exception as save_error:
+                print_if_debug(save_error)
                 print_if_debug("retrying")
         print_if_debug("success")
     except:
@@ -283,8 +283,8 @@ def process_workbook_command_wrapper():
     process_errors = False
     try:
         do_process_workbook()
-    except IOError as error:
-        print(error)
+    except IOError as process_folder_io_error:
+        print(process_folder_io_error)
         process_errors = True
         new_workbook_label.configure(text="Error saving, select another output file.")
     new_workbook_path = ""
