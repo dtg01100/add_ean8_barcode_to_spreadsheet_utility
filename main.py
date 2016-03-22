@@ -162,6 +162,8 @@ def do_process_workbook():
     count = 1
     save_counter = 1
     progress_bar.configure(maximum=ws.max_row, value=count)
+    progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
+    root_window.update()
     border_size = int(border_spinbox.get())
 
     for _ in ws.iter_rows():  # iterate over all rows in current worksheet
@@ -238,6 +240,7 @@ def do_process_workbook():
         except Exception as save_error:
             print_if_debug(save_error)
         finally:
+            progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
             count += 1
             progress_bar.configure(value=count)
             progress_bar_frame.update()
@@ -271,6 +274,7 @@ def do_process_workbook():
 
     progress_bar.stop()
     progress_bar.configure(maximum=ws.max_row, value=0, mode='determinate')
+    progress_numbers.configure(text="")
     progress_bar_frame.update()
 
 
@@ -352,7 +356,9 @@ process_workbook_button.configure(state=DISABLED)
 process_workbook_button.pack()
 
 progress_bar = Progressbar(master=progress_bar_frame)
-progress_bar.pack()
+progress_bar.pack(side=RIGHT)
+progress_numbers = Label(master=progress_bar_frame)
+progress_numbers.pack(side=LEFT)
 
 if flags_count != 0:
     Label(root_window, text=flags_list_string).grid(row=0, column=0, columnspan=2)
