@@ -186,7 +186,6 @@ def do_process_workbook():
             with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as initial_temp_file_path:
                 filename = ean.save(initial_temp_file_path.name[0:-4])
                 print_if_debug("success, barcode image path is: " + filename)
-                # add image to list of files to remove after run
                 print_if_debug("opening " + str(filename) + " to add border")
                 barcode_image = pil_Image.open(str(filename))  # open image as pil object
                 print_if_debug("success")
@@ -201,7 +200,6 @@ def do_process_workbook():
                 with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as final_barcode_path:
                     img_save.save(final_barcode_path.name)
                     print_if_debug("success, final barcode path is: " + final_barcode_path.name)
-                    # add image to list of files to remove after run
                     # open image with as openpyxl image object
                     print_if_debug("opening " + final_barcode_path.name + " to insert into output spreadsheet")
                     img = OpenPyXlImage(final_barcode_path.name)
