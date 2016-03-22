@@ -47,21 +47,23 @@ if args.keep_barcode_files:
 
 old_workbook_path = ""
 new_workbook_path = ""
+wb = None
 
 program_launch_cwd = os.getcwd()
 
 try:
     if platform.system() == 'Windows':
         import win32file
+
         file_limit = win32file._getmaxstdio()
     else:
         import resource
+
         soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
         file_limit = soft
 except Exception as error:
     warnings.warn("Getting open file limit failed with: " + str(error) + " setting internal file limit to 500")
     file_limit = 500
-
 
 if args.log:
     import sys
@@ -92,7 +94,6 @@ if args.debug:
 def select_folder_old_new_wrapper(selection):
     global old_workbook_path
     global new_workbook_path
-    global update_gui_thread_keep_alive
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=DISABLED)
     new_workbook_selection_button.configure(state=DISABLED)
@@ -102,19 +103,11 @@ def select_folder_old_new_wrapper(selection):
                                                      filetypes=[("Excel Spreadsheet", "*.xlsx")])
         file_is_xlsx = False
         if os.path.exists(old_workbook_path_proposed):
-            progress_bar.configure(mode='indeterminate')
-            progress_bar.start()
-            update_gui_thread_object = threading.Thread(target=update_gui_thread)
-            update_gui_thread_keep_alive = True
-            update_gui_thread_object.start()
             try:
                 openpyxl.load_workbook(old_workbook_path_proposed, read_only=True)
                 file_is_xlsx = True
             except Exception as file_test_open_error:
                 print(file_test_open_error)
-            progress_bar.stop()
-            progress_bar.configure(value=0, mode='determinate')
-            update_gui_thread_keep_alive = False
         if os.path.exists(old_workbook_path_proposed) and file_is_xlsx is True:
             old_workbook_path = old_workbook_path_proposed
             old_workbook_path_wrapped = '\n'.join(textwrap.wrap(old_workbook_path, width=75, replace_whitespace=False))
@@ -139,15 +132,15 @@ def print_if_debug(string):
         print(string)
 
 
-def update_gui_thread():
-    global update_gui_thread_keep_alive
-    while update_gui_thread_keep_alive:
-        progress_bar_frame.update()
-        time.sleep(0.05)
+def save_workbook_thread():
+    global wb
+    global new_workbook_path
+    wb.save(new_workbook_path)
 
 
 def do_process_workbook():
-    global update_gui_thread_keep_alive
+    global wb
+    global new_workbook_path
     print_if_debug("creating temp directory")
     if not args.keep_barcodes_in_home:
         tempdir = tempfile.mkdtemp()
@@ -220,23 +213,21 @@ def do_process_workbook():
                 # noinspection PyBroadException
                 try:
                     print_if_debug("saving intermediate workbook to free file handles")
-                    update_gui_thread_object = threading.Thread(target=update_gui_thread)
-                    update_gui_thread_keep_alive = True
-                    update_gui_thread_object.start()
-                    save_is_complete = False
-                    while not save_is_complete:
-                        try:
-                            wb.save(new_workbook_path)
-                            save_is_complete = True
-                        except Exception as save_error:
-                            print_if_debug(save_error)
-                            print_if_debug("retrying")
+                    progress_bar.configure(mode='indeterminate')
+                    progress_bar.start()
+                    progress_numbers.configure(text=str(count) + "/" + str(ws.max_row) + " saving")
+                    save_workbook_thread_object = threading.Thread(target=save_workbook_thread)
+                    save_workbook_thread_object.start()
+                    while save_workbook_thread_object.is_alive():
+                        progress_bar_frame.update()
+                        time.sleep(0.05)
                     print_if_debug("success")
                 except:
                     print("Cannot write to output file")
                 save_counter = 1
-                update_gui_thread_keep_alive = False
+                progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
             save_counter += 1
+            progress_bar.configure(maximum=ws.max_row, value=count, mode='determinate')
         except Exception as save_error:
             print_if_debug(save_error)
         finally:
@@ -251,17 +242,12 @@ def do_process_workbook():
         print_if_debug("saving workbook to file")
         progress_bar.configure(mode='indeterminate')
         progress_bar.start()
-        update_gui_thread_object = threading.Thread(target=update_gui_thread)
-        update_gui_thread_keep_alive = True
-        update_gui_thread_object.start()
-        save_is_complete = False
-        while not save_is_complete:
-            try:
-                wb.save(new_workbook_path)
-                save_is_complete = True
-            except Exception as save_error:
-                print_if_debug(save_error)
-                print_if_debug("retrying")
+        progress_numbers.configure(text="saving")
+        save_workbook_thread_object = threading.Thread(target=save_workbook_thread)
+        save_workbook_thread_object.start()
+        while save_workbook_thread_object.is_alive():
+            progress_bar_frame.update()
+            time.sleep(0.05)
         print_if_debug("success")
     except:
         print("Cannot write to output file")
@@ -270,7 +256,6 @@ def do_process_workbook():
             print_if_debug("removing temp folder " + tempdir)
             shutil.rmtree(tempdir)
             print_if_debug("success")
-            update_gui_thread_keep_alive = False
 
     progress_bar.stop()
     progress_bar.configure(maximum=ws.max_row, value=0, mode='determinate')
@@ -317,7 +302,6 @@ border_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=R
 font_size_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=RIGHT)
 font_size_spinbox.delete(0, "end")
 font_size_spinbox.insert(0, 6)
-
 
 old_workbook_selection_button = Button(master=old_workbook_file_frame, text="Select Original Workbook",
                                        command=lambda: select_folder_old_new_wrapper("old"))
