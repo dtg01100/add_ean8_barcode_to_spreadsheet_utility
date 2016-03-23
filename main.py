@@ -138,9 +138,16 @@ def save_workbook_thread():
     wb.save(new_workbook_path)
 
 
+def open_workbook_thread():
+    global wb
+    global old_workbook_path
+    wb = openpyxl.load_workbook(old_workbook_path)
+
+
 def do_process_workbook():
     global wb
     global new_workbook_path
+    global old_workbook_path
     print_if_debug("creating temp directory")
     if not args.keep_barcodes_in_home:
         tempdir = tempfile.mkdtemp()
@@ -149,7 +156,14 @@ def do_process_workbook():
         os.mkdir(temp_dir_in_cwd)
         tempdir = temp_dir_in_cwd
     print_if_debug("temp directory created as: " + tempdir)
-    wb = openpyxl.load_workbook(old_workbook_path)
+    progress_bar.configure(mode='indeterminate')
+    progress_bar.start()
+    progress_numbers.configure(text="opening workbook")
+    open_old_workbook_thread_object = threading.Thread(target=open_workbook_thread)
+    open_old_workbook_thread_object.start()
+    while open_old_workbook_thread_object.is_alive():
+        root_window.update()
+        time.sleep(0.05)
     ws = wb.worksheets[0]
     wb.save(new_workbook_path)
     count = 1
