@@ -202,6 +202,7 @@ def do_process_workbook():
                     img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
                     # add image to cell
                     ws.add_image(img)
+                    save_counter += 1
             print_if_debug("success")
             # This save in the loop frees references to the barcode images,
             #  so that python's garbage collector can clear them
@@ -217,7 +218,6 @@ def do_process_workbook():
             print_if_debug("success")
             save_counter = 1
             progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
-        save_counter += 1
         progress_bar.configure(maximum=ws.max_row, value=count, mode='determinate')
         progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
         count += 1
