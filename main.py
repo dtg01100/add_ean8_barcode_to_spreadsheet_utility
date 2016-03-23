@@ -46,7 +46,6 @@ if args.keep_barcode_files:
 
 old_workbook_path = ""
 new_workbook_path = ""
-wb = None
 
 program_launch_cwd = os.getcwd()
 
