@@ -146,17 +146,20 @@ def do_process_workbook():
     ws = wb.worksheets[0]
     progress_numbers.configure(text="testing workbook save")
     wb.save(new_workbook_path)
-    count = 1
-    save_counter = 1
+    count = 0
+    save_counter = 0
     progress_bar.configure(maximum=ws.max_row, value=count)
     progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
-    root_window.update()
     border_size = int(border_spinbox.get())
 
     for _ in ws.iter_rows():  # iterate over all rows in current worksheet
         if not process_workbook_keep_alive:
             break
         try:
+            count += 1
+            progress_bar.configure(maximum=ws.max_row, value=count, mode='determinate')
+            progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
+            progress_bar.configure(value=count)
             # get code from column "B", on current row, add a zero to the end to make seven digits
             print_if_debug("getting cell contents on line number " + str(count))
             upc_barcode_number = ws["B" + str(count)].value + "0"
@@ -218,13 +221,7 @@ def do_process_workbook():
             print_if_debug("success")
             save_counter = 1
             progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
-        progress_bar.configure(maximum=ws.max_row, value=count, mode='determinate')
-        progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
-        count += 1
-        progress_bar.configure(value=count)
-        progress_bar_frame.update()
     progress_bar.configure(value=0)
-    progress_bar_frame.update()
     # noinspection PyBroadException
     print_if_debug("saving workbook to file")
     progress_bar.configure(mode='indeterminate', maximum=100)
@@ -240,7 +237,6 @@ def do_process_workbook():
     progress_bar.stop()
     progress_bar.configure(maximum=100, value=0, mode='determinate')
     progress_numbers.configure(text="")
-    progress_bar_frame.update()
 
 
 def process_workbook_thread():
@@ -273,7 +269,6 @@ def process_workbook_command_wrapper():
     process_workbook_button.configure(state=DISABLED, text="Processing Workbook")
     cancel_process_workbook_button = Button(master=go_button_frame, command=kill_process_workbook, text="Cancel")
     cancel_process_workbook_button.pack(side=RIGHT)
-    root_window.update()
     process_workbook_keep_alive = True
     process_workbook_thread_object = threading.Thread(target=process_workbook_thread)
     process_workbook_thread_object.start()
