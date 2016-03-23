@@ -63,7 +63,7 @@ try:
         file_limit = soft
 except Exception as error:
     warnings.warn("Getting open file limit failed with: " + str(error) + " setting internal file limit to 500")
-    file_limit = 500
+    file_limit = 100
 
 if args.log:
     import sys
