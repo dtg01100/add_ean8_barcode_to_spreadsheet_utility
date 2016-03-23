@@ -205,45 +205,37 @@ def do_process_workbook():
             print_if_debug("success")
             # This save in the loop frees references to the barcode images,
             #  so that python's garbage collector can clear them
-            if save_counter == file_limit - 50:
-                # noinspection PyBroadException
-                try:
-                    print_if_debug("saving intermediate workbook to free file handles")
-                    progress_bar.configure(mode='indeterminate', maximum=100)
-                    progress_bar.start()
-                    progress_numbers.configure(text=str(count) + "/" + str(ws.max_row) + " saving")
-                    wb.save(new_workbook_path)
-                    print_if_debug("success")
-                except:
-                    print("Cannot write to output file")
-                save_counter = 1
-                progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
-            save_counter += 1
-            progress_bar.configure(maximum=ws.max_row, value=count, mode='determinate')
-        except Exception as save_error:
-            print_if_debug(save_error)
-        finally:
+        except Exception as barcode_error:
+            print_if_debug(barcode_error)
+        if save_counter == file_limit - 50:
+            # noinspection PyBroadException
+            print_if_debug("saving intermediate workbook to free file handles")
+            progress_bar.configure(mode='indeterminate', maximum=100)
+            progress_bar.start()
+            progress_numbers.configure(text=str(count) + "/" + str(ws.max_row) + " saving")
+            wb.save(new_workbook_path)
+            print_if_debug("success")
+            save_counter = 1
             progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
-            count += 1
-            progress_bar.configure(value=count)
-            progress_bar_frame.update()
+        save_counter += 1
+        progress_bar.configure(maximum=ws.max_row, value=count, mode='determinate')
+        progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
+        count += 1
+        progress_bar.configure(value=count)
+        progress_bar_frame.update()
     progress_bar.configure(value=0)
     progress_bar_frame.update()
     # noinspection PyBroadException
-    try:
-        print_if_debug("saving workbook to file")
-        progress_bar.configure(mode='indeterminate', maximum=100)
-        progress_bar.start()
-        progress_numbers.configure(text="saving")
-        wb.save(new_workbook_path)
+    print_if_debug("saving workbook to file")
+    progress_bar.configure(mode='indeterminate', maximum=100)
+    progress_bar.start()
+    progress_numbers.configure(text="saving")
+    wb.save(new_workbook_path)
+    print_if_debug("success")
+    if not args.keep_barcode_files:
+        print_if_debug("removing temp folder " + tempdir)
+        shutil.rmtree(tempdir)
         print_if_debug("success")
-    except:
-        print("Cannot write to output file")
-    finally:
-        if not args.keep_barcode_files:
-            print_if_debug("removing temp folder " + tempdir)
-            shutil.rmtree(tempdir)
-            print_if_debug("success")
 
     progress_bar.stop()
     progress_bar.configure(maximum=100, value=0, mode='determinate')
