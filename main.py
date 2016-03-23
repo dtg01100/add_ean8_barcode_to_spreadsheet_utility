@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import time
 import shutil
 import warnings
 import barcode
@@ -132,22 +131,7 @@ def print_if_debug(string):
         print(string)
 
 
-def save_workbook_thread():
-    global wb
-    global new_workbook_path
-    wb.save(new_workbook_path)
-
-
-def open_workbook_thread():
-    global wb
-    global old_workbook_path
-    wb = openpyxl.load_workbook(old_workbook_path)
-
-
 def do_process_workbook():
-    global wb
-    global new_workbook_path
-    global old_workbook_path
     print_if_debug("creating temp directory")
     if not args.keep_barcodes_in_home:
         tempdir = tempfile.mkdtemp()
@@ -156,15 +140,12 @@ def do_process_workbook():
         os.mkdir(temp_dir_in_cwd)
         tempdir = temp_dir_in_cwd
     print_if_debug("temp directory created as: " + tempdir)
-    progress_bar.configure(mode='indeterminate')
+    progress_bar.configure(mode='indeterminate', maximum=100)
     progress_bar.start()
     progress_numbers.configure(text="opening workbook")
-    open_old_workbook_thread_object = threading.Thread(target=open_workbook_thread)
-    open_old_workbook_thread_object.start()
-    while open_old_workbook_thread_object.is_alive():
-        root_window.update()
-        time.sleep(0.05)
+    wb = openpyxl.load_workbook(old_workbook_path)
     ws = wb.worksheets[0]
+    progress_numbers.configure(text="testing workbook save")
     wb.save(new_workbook_path)
     count = 1
     save_counter = 1
@@ -174,6 +155,8 @@ def do_process_workbook():
     border_size = int(border_spinbox.get())
 
     for _ in ws.iter_rows():  # iterate over all rows in current worksheet
+        if not process_workbook_keep_alive:
+            break
         try:
             # get code from column "B", on current row, add a zero to the end to make seven digits
             print_if_debug("getting cell contents on line number " + str(count))
@@ -227,14 +210,10 @@ def do_process_workbook():
                 # noinspection PyBroadException
                 try:
                     print_if_debug("saving intermediate workbook to free file handles")
-                    progress_bar.configure(mode='indeterminate')
+                    progress_bar.configure(mode='indeterminate', maximum=100)
                     progress_bar.start()
                     progress_numbers.configure(text=str(count) + "/" + str(ws.max_row) + " saving")
-                    save_workbook_thread_object = threading.Thread(target=save_workbook_thread)
-                    save_workbook_thread_object.start()
-                    while save_workbook_thread_object.is_alive():
-                        progress_bar_frame.update()
-                        time.sleep(0.05)
+                    wb.save(new_workbook_path)
                     print_if_debug("success")
                 except:
                     print("Cannot write to output file")
@@ -254,14 +233,10 @@ def do_process_workbook():
     # noinspection PyBroadException
     try:
         print_if_debug("saving workbook to file")
-        progress_bar.configure(mode='indeterminate')
+        progress_bar.configure(mode='indeterminate', maximum=100)
         progress_bar.start()
         progress_numbers.configure(text="saving")
-        save_workbook_thread_object = threading.Thread(target=save_workbook_thread)
-        save_workbook_thread_object.start()
-        while save_workbook_thread_object.is_alive():
-            progress_bar_frame.update()
-            time.sleep(0.05)
+        wb.save(new_workbook_path)
         print_if_debug("success")
     except:
         print("Cannot write to output file")
@@ -272,19 +247,13 @@ def do_process_workbook():
             print_if_debug("success")
 
     progress_bar.stop()
-    progress_bar.configure(maximum=ws.max_row, value=0, mode='determinate')
+    progress_bar.configure(maximum=100, value=0, mode='determinate')
     progress_numbers.configure(text="")
     progress_bar_frame.update()
 
 
-def process_workbook_command_wrapper():
+def process_workbook_thread():
     global new_workbook_path
-    new_workbook_selection_button.configure(state=DISABLED)
-    old_workbook_selection_button.configure(state=DISABLED)
-    for child in size_spinbox_frame.winfo_children():
-        child.configure(state=DISABLED)
-    process_workbook_button.configure(state=DISABLED, text="Processing Workbook")
-    root_window.update()
     process_errors = False
     try:
         do_process_workbook()
@@ -295,11 +264,39 @@ def process_workbook_command_wrapper():
     new_workbook_path = ""
     if not process_errors:
         new_workbook_label.configure(text="No File Selected")
+
+
+def process_workbook_command_wrapper():
+    global new_workbook_path
+    global process_workbook_keep_alive
+
+    def kill_process_workbook():
+        global process_workbook_keep_alive
+        process_workbook_keep_alive = False
+        cancel_process_workbook_button.configure(text="Cancelling", state=DISABLED)
+
+    new_workbook_selection_button.configure(state=DISABLED)
+    old_workbook_selection_button.configure(state=DISABLED)
+    for child in size_spinbox_frame.winfo_children():
+        child.configure(state=DISABLED)
+    process_workbook_button.configure(state=DISABLED, text="Processing Workbook")
+    cancel_process_workbook_button = Button(master=go_button_frame, command=kill_process_workbook, text="Cancel")
+    cancel_process_workbook_button.pack(side=RIGHT)
+    root_window.update()
+    process_workbook_keep_alive = True
+    process_workbook_thread_object = threading.Thread(target=process_workbook_thread)
+    process_workbook_thread_object.start()
+    while process_workbook_thread_object.is_alive():
+        root_window.update()
+    cancel_process_workbook_button.destroy()
     new_workbook_selection_button.configure(state=NORMAL)
     old_workbook_selection_button.configure(state=NORMAL)
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=NORMAL)
-    process_workbook_button.configure(text="Done Processing Workbook")
+    if process_workbook_keep_alive:
+        process_workbook_button.configure(text="Done Processing Workbook")
+    else:
+        process_workbook_button.configure(text="Processing Workbook Canceled")
 
 
 both_workbook_frame = Frame(root_window)
@@ -351,7 +348,7 @@ process_workbook_button = Button(master=go_button_frame, text="Select Workbooks"
 
 process_workbook_button.configure(state=DISABLED)
 
-process_workbook_button.pack()
+process_workbook_button.pack(side=LEFT)
 
 progress_bar = Progressbar(master=progress_bar_frame)
 progress_bar.pack(side=RIGHT)
