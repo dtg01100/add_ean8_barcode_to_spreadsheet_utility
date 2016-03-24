@@ -121,6 +121,8 @@ def select_folder_old_new_wrapper(selection):
                                                      filetypes=[("Excel Spreadsheet", "*.xlsx")])
         file_is_xlsx = False
         if os.path.exists(old_workbook_path_proposed):
+            settings_dict['initial_input_folder'] = os.path.dirname(old_workbook_path)
+            settings.update(settings_dict, ['id'])
             try:
                 openpyxl.load_workbook(old_workbook_path_proposed, read_only=True)
                 file_is_xlsx = True
@@ -128,8 +130,6 @@ def select_folder_old_new_wrapper(selection):
                 print(file_test_open_error)
         if os.path.exists(old_workbook_path_proposed) and file_is_xlsx is True:
             old_workbook_path = old_workbook_path_proposed
-            settings_dict['initial_input_folder'] = os.path.dirname(old_workbook_path)
-            settings.update(settings_dict, ['id'])
             old_workbook_path_wrapped = '\n'.join(textwrap.wrap(old_workbook_path, width=75, replace_whitespace=False))
             old_workbook_label.configure(text=old_workbook_path_wrapped, justify=LEFT)
     else:
