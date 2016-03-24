@@ -247,7 +247,11 @@ def process_workbook_thread():
     except IOError as process_folder_io_error:
         print(process_folder_io_error)
         process_errors = True
-        new_workbook_label.configure(text="Error saving, select another output file.")
+        new_workbook_label.configure(text="Error saving, select another output file.", fg="red")
+    except MemoryError as process_folder_memory_error:
+        print(process_folder_memory_error)
+        process_errors = True
+        new_workbook_label.configure(text="Memory Error, workbook too large", fg="red")
     new_workbook_path = ""
     if not process_errors:
         new_workbook_label.configure(text="No File Selected")
