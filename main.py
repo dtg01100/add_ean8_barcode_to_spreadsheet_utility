@@ -211,7 +211,7 @@ def do_process_workbook():
             #  so that python's garbage collector can clear them
         except Exception as barcode_error:
             print_if_debug(barcode_error)
-        if save_counter == file_limit - 50:
+        if save_counter >= file_limit - 50:
             # noinspection PyBroadException
             print_if_debug("saving intermediate workbook to free file handles")
             progress_bar.configure(mode='indeterminate', maximum=100)
