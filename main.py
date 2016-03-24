@@ -18,7 +18,7 @@ import threading
 import platform
 import dataset
 
-settings_file_path = os.path.join(os.path.expanduser('~'), 'barcode insert utility settings.db')
+settings_file_path = os.path.join(os.path.expanduser('~'), '.barcode insert utility settings.db')
 
 if not os.path.exists(settings_file_path):
     database_connection = dataset.connect('sqlite:///' + settings_file_path)
