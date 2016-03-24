@@ -16,6 +16,19 @@ import argparse
 import textwrap
 import threading
 import platform
+import dataset
+
+settings_file_path = os.path.join(os.path.expanduser('~'), 'barcode insert utility settings.db')
+
+if not os.path.exists(settings_file_path):
+    database_connection = dataset.connect('sqlite:///' + settings_file_path)
+    settings = database_connection['settings']
+    settings.insert(dict(initial_input_folder=os.path.expanduser('~'), initial_output_folder=os.path.expanduser('~'),
+                         barcode_dpi=120, barcode_module_height=5, barcode_border=0, barcode_font_size=6))
+
+database_connection = dataset.connect('sqlite:///' + settings_file_path)
+settings = database_connection['settings']
+settings_dict = settings.find_one(id=1)
 
 root_window = Tk()
 
@@ -97,7 +110,7 @@ def select_folder_old_new_wrapper(selection):
     new_workbook_selection_button.configure(state=DISABLED)
     old_workbook_selection_button.configure(state=DISABLED)
     if selection is "old":
-        old_workbook_path_proposed = askopenfilename(initialdir=os.path.expanduser('~'),
+        old_workbook_path_proposed = askopenfilename(initialdir=settings_dict['initial_input_folder'],
                                                      filetypes=[("Excel Spreadsheet", "*.xlsx")])
         file_is_xlsx = False
         if os.path.exists(old_workbook_path_proposed):
@@ -108,13 +121,18 @@ def select_folder_old_new_wrapper(selection):
                 print(file_test_open_error)
         if os.path.exists(old_workbook_path_proposed) and file_is_xlsx is True:
             old_workbook_path = old_workbook_path_proposed
+            settings_dict['initial_input_folder'] = os.path.dirname(old_workbook_path)
+            settings.update(settings_dict, ['id'])
             old_workbook_path_wrapped = '\n'.join(textwrap.wrap(old_workbook_path, width=75, replace_whitespace=False))
             old_workbook_label.configure(text=old_workbook_path_wrapped, justify=LEFT)
     else:
-        new_workbook_path_proposed = asksaveasfilename(initialdir=os.path.expanduser('~'), defaultextension='.xlsx',
+        new_workbook_path_proposed = asksaveasfilename(initialdir=settings_dict['initial_output_folder'],
+                                                       defaultextension='.xlsx',
                                                        filetypes=[("Excel Spreadsheet", "*.xlsx")])
         if os.path.exists(os.path.dirname(new_workbook_path_proposed)):
             new_workbook_path = new_workbook_path_proposed
+            settings_dict['initial_output_folder'] = os.path.dirname(new_workbook_path)
+            settings.update(settings_dict, ['id'])
             new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
             new_workbook_label.configure(text=new_workbook_path_wrapped, justify=LEFT)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
@@ -240,6 +258,8 @@ def do_process_workbook():
 def process_workbook_thread():
     global new_workbook_path
     process_errors = False
+    global process_workbook_keep_alive
+    process_workbook_keep_alive = True
     try:
         do_process_workbook()
     except IOError as process_folder_io_error:
@@ -265,12 +285,16 @@ def process_workbook_command_wrapper():
 
     new_workbook_selection_button.configure(state=DISABLED)
     old_workbook_selection_button.configure(state=DISABLED)
+    settings_dict['barcode_dpi'] = dpi_spinbox.get()
+    settings_dict['barcode_module_height'] = height_spinbox.get()
+    settings_dict['barcode_border'] = border_spinbox.get()
+    settings_dict['barcode_font_size'] = font_size_spinbox.get()
+    settings.update(settings_dict, ['id'])
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=DISABLED)
     process_workbook_button.configure(state=DISABLED, text="Processing Workbook")
     cancel_process_workbook_button = Button(master=go_button_frame, command=kill_process_workbook, text="Cancel")
     cancel_process_workbook_button.pack(side=RIGHT)
-    process_workbook_keep_alive = True
     process_workbook_thread_object = threading.Thread(target=process_workbook_thread)
     process_workbook_thread_object.start()
     while process_workbook_thread_object.is_alive():
@@ -295,11 +319,17 @@ progress_bar_frame = Frame(go_and_progress_frame)
 size_spinbox_frame = Frame(root_window)
 
 dpi_spinbox = Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=RIGHT)
+dpi_spinbox.delete(0, "end")
+dpi_spinbox.insert(0, settings_dict['barcode_dpi'])
 height_spinbox = Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=RIGHT)
+height_spinbox.delete(0, "end")
+height_spinbox.insert(0, settings_dict['barcode_module_height'])
 border_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=RIGHT)
+border_spinbox.delete(0, "end")
+border_spinbox.insert(0, settings_dict['barcode_border'])
 font_size_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=RIGHT)
 font_size_spinbox.delete(0, "end")
-font_size_spinbox.insert(0, 6)
+font_size_spinbox.insert(0, settings_dict['barcode_font_size'])
 
 old_workbook_selection_button = Button(master=old_workbook_file_frame, text="Select Original Workbook",
                                        command=lambda: select_folder_old_new_wrapper("old"))
