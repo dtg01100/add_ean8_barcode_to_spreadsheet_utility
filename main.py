@@ -73,7 +73,7 @@ try:
         soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
         file_limit = soft
 except Exception as error:
-    warnings.warn("Getting open file limit failed with: " + str(error) + " setting internal file limit to 500")
+    warnings.warn("Getting open file limit failed with: " + str(error) + " setting internal file limit to 100")
     file_limit = 100
 
 if args.log:
@@ -100,6 +100,13 @@ if args.log:
 
 if args.debug:
     print(launch_options.parse_args())
+
+
+def print_if_debug(string):
+    if args.debug:
+        print(string)
+
+print_if_debug("File limit is: " + str(file_limit))
 
 
 def select_folder_old_new_wrapper(selection):
@@ -141,11 +148,6 @@ def select_folder_old_new_wrapper(selection):
         child.configure(state=NORMAL)
     new_workbook_selection_button.configure(state=NORMAL)
     old_workbook_selection_button.configure(state=NORMAL)
-
-
-def print_if_debug(string):
-    if args.debug:
-        print(string)
 
 
 def do_process_workbook():
