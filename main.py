@@ -212,7 +212,6 @@ def do_process_workbook():
         except Exception as barcode_error:
             print_if_debug(barcode_error)
         if save_counter >= file_limit - 50:
-            # noinspection PyBroadException
             print_if_debug("saving intermediate workbook to free file handles")
             progress_bar.configure(mode='indeterminate', maximum=100)
             progress_bar.start()
@@ -222,7 +221,6 @@ def do_process_workbook():
             save_counter = 1
             progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
     progress_bar.configure(value=0)
-    # noinspection PyBroadException
     print_if_debug("saving workbook to file")
     progress_bar.configure(mode='indeterminate', maximum=100)
     progress_bar.start()
@@ -259,7 +257,6 @@ def process_workbook_thread():
 
 def process_workbook_command_wrapper():
     global new_workbook_path
-    global process_workbook_keep_alive
 
     def kill_process_workbook():
         global process_workbook_keep_alive
