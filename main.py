@@ -1,19 +1,7 @@
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
-
-from builtins import dict
-from builtins import open
-from builtins import int
-from builtins import str
-from future import standard_library
-
-standard_library.install_aliases()
+#!/usr/bin/env python3
 
 import shutil
 import warnings
-
 import barcode
 import openpyxl
 from openpyxl.drawing.image import Image as OpenPyXlImage
@@ -21,20 +9,14 @@ from PIL import Image as pil_Image
 import ImageOps as pil_ImageOps
 import math
 from barcode.writer import ImageWriter
-import tkinter.ttk
-
-try:
-    from tkFileDialog import asksaveasfilename, askopenfilename
-except:
-    from tkinter.filedialog import asksaveasfilename, askopenfilename
-
+from tkinter.ttk import *
+from tkinter.filedialog import *
 import tempfile
 import argparse
 import textwrap
 import threading
 import platform
 import dataset
-import os
 
 settings_file_path = os.path.join(os.path.expanduser('~'), '.barcode insert utility settings.db')
 
@@ -48,7 +30,7 @@ database_connection = dataset.connect('sqlite:///' + settings_file_path)
 settings = database_connection['settings']
 settings_dict = settings.find_one(id=1)
 
-root_window = tkinter.Tk()
+root_window = Tk()
 
 launch_options = argparse.ArgumentParser()
 launch_options.add_argument('-d', '--debug', action='store_true', help="print debug output to stdout")
@@ -124,7 +106,6 @@ def print_if_debug(string):
     if args.debug:
         print(string)
 
-
 print_if_debug("File limit is: " + str(file_limit))
 
 
@@ -132,13 +113,12 @@ def select_folder_old_new_wrapper(selection):
     global old_workbook_path
     global new_workbook_path
     for child in size_spinbox_frame.winfo_children():
-        child.configure(state=tkinter.DISABLED)
-    new_workbook_selection_button.configure(state=tkinter.DISABLED)
-    old_workbook_selection_button.configure(state=tkinter.DISABLED)
+        child.configure(state=DISABLED)
+    new_workbook_selection_button.configure(state=DISABLED)
+    old_workbook_selection_button.configure(state=DISABLED)
     if selection is "old":
-        old_workbook_path_proposed = askopenfilename(
-            initialdir=settings_dict['initial_input_folder'],
-            filetypes=[("Excel Spreadsheet", "*.xlsx")])
+        old_workbook_path_proposed = askopenfilename(initialdir=settings_dict['initial_input_folder'],
+                                                     filetypes=[("Excel Spreadsheet", "*.xlsx")])
         file_is_xlsx = False
         if os.path.exists(old_workbook_path_proposed):
             settings_dict['initial_input_folder'] = os.path.dirname(old_workbook_path)
@@ -151,24 +131,23 @@ def select_folder_old_new_wrapper(selection):
         if os.path.exists(old_workbook_path_proposed) and file_is_xlsx is True:
             old_workbook_path = old_workbook_path_proposed
             old_workbook_path_wrapped = '\n'.join(textwrap.wrap(old_workbook_path, width=75, replace_whitespace=False))
-            old_workbook_label.configure(text=old_workbook_path_wrapped, justify=tkinter.LEFT)
+            old_workbook_label.configure(text=old_workbook_path_wrapped, justify=LEFT)
     else:
-        new_workbook_path_proposed = asksaveasfilename(
-            initialdir=settings_dict['initial_output_folder'],
-            defaultextension='.xlsx',
-            filetypes=[("Excel Spreadsheet", "*.xlsx")])
+        new_workbook_path_proposed = asksaveasfilename(initialdir=settings_dict['initial_output_folder'],
+                                                       defaultextension='.xlsx',
+                                                       filetypes=[("Excel Spreadsheet", "*.xlsx")])
         if os.path.exists(os.path.dirname(new_workbook_path_proposed)):
             new_workbook_path = new_workbook_path_proposed
             settings_dict['initial_output_folder'] = os.path.dirname(new_workbook_path)
             settings.update(settings_dict, ['id'])
             new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
-            new_workbook_label.configure(text=new_workbook_path_wrapped, justify=tkinter.LEFT)
+            new_workbook_label.configure(text=new_workbook_path_wrapped, justify=LEFT)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
-        process_workbook_button.configure(state=tkinter.NORMAL, text="Process Workbook")
+        process_workbook_button.configure(state=NORMAL, text="Process Workbook")
     for child in size_spinbox_frame.winfo_children():
-        child.configure(state=tkinter.NORMAL)
-    new_workbook_selection_button.configure(state=tkinter.NORMAL)
-    old_workbook_selection_button.configure(state=tkinter.NORMAL)
+        child.configure(state=NORMAL)
+    new_workbook_selection_button.configure(state=NORMAL)
+    old_workbook_selection_button.configure(state=NORMAL)
 
 
 def do_process_workbook():
@@ -304,113 +283,112 @@ def process_workbook_command_wrapper():
     def kill_process_workbook():
         global process_workbook_keep_alive
         process_workbook_keep_alive = False
-        cancel_process_workbook_button.configure(text="Cancelling", state=tkinter.DISABLED)
+        cancel_process_workbook_button.configure(text="Cancelling", state=DISABLED)
 
-    new_workbook_selection_button.configure(state=tkinter.DISABLED)
-    old_workbook_selection_button.configure(state=tkinter.DISABLED)
+    new_workbook_selection_button.configure(state=DISABLED)
+    old_workbook_selection_button.configure(state=DISABLED)
     settings_dict['barcode_dpi'] = dpi_spinbox.get()
     settings_dict['barcode_module_height'] = height_spinbox.get()
     settings_dict['barcode_border'] = border_spinbox.get()
     settings_dict['barcode_font_size'] = font_size_spinbox.get()
     settings.update(settings_dict, ['id'])
     for child in size_spinbox_frame.winfo_children():
-        child.configure(state=tkinter.DISABLED)
-    process_workbook_button.configure(state=tkinter.DISABLED, text="Processing Workbook")
-    cancel_process_workbook_button = tkinter.ttk.Button(master=go_button_frame, command=kill_process_workbook,
-                                                        text="Cancel")
-    cancel_process_workbook_button.pack(side=tkinter.RIGHT)
+        child.configure(state=DISABLED)
+    process_workbook_button.configure(state=DISABLED, text="Processing Workbook")
+    cancel_process_workbook_button = Button(master=go_button_frame, command=kill_process_workbook, text="Cancel")
+    cancel_process_workbook_button.pack(side=RIGHT)
     process_workbook_thread_object = threading.Thread(target=process_workbook_thread)
     process_workbook_thread_object.start()
     while process_workbook_thread_object.is_alive():
         root_window.update()
     cancel_process_workbook_button.destroy()
-    new_workbook_selection_button.configure(state=tkinter.NORMAL)
-    old_workbook_selection_button.configure(state=tkinter.NORMAL)
+    new_workbook_selection_button.configure(state=NORMAL)
+    old_workbook_selection_button.configure(state=NORMAL)
     for child in size_spinbox_frame.winfo_children():
-        child.configure(state=tkinter.NORMAL)
+        child.configure(state=NORMAL)
     if process_workbook_keep_alive:
         process_workbook_button.configure(text="Done Processing Workbook")
     else:
         process_workbook_button.configure(text="Processing Workbook Canceled")
 
 
-both_workbook_frame = tkinter.ttk.Frame(root_window)
-old_workbook_file_frame = tkinter.ttk.Frame(both_workbook_frame)
-new_workbook_file_frame = tkinter.ttk.Frame(both_workbook_frame)
-go_and_progress_frame = tkinter.ttk.Frame(root_window)
-go_button_frame = tkinter.ttk.Frame(go_and_progress_frame)
-progress_bar_frame = tkinter.ttk.Frame(go_and_progress_frame)
-size_spinbox_frame = tkinter.ttk.Frame(root_window)
+both_workbook_frame = Frame(root_window)
+old_workbook_file_frame = Frame(both_workbook_frame)
+new_workbook_file_frame = Frame(both_workbook_frame)
+go_and_progress_frame = Frame(root_window)
+go_button_frame = Frame(go_and_progress_frame)
+progress_bar_frame = Frame(go_and_progress_frame)
+size_spinbox_frame = Frame(root_window)
 
-dpi_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=tkinter.RIGHT)
+dpi_spinbox = Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=RIGHT)
 dpi_spinbox.delete(0, "end")
 dpi_spinbox.insert(0, settings_dict['barcode_dpi'])
-height_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=tkinter.RIGHT)
+height_spinbox = Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=RIGHT)
 height_spinbox.delete(0, "end")
 height_spinbox.insert(0, settings_dict['barcode_module_height'])
-border_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=tkinter.RIGHT)
+border_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=RIGHT)
 border_spinbox.delete(0, "end")
 border_spinbox.insert(0, settings_dict['barcode_border'])
-font_size_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=tkinter.RIGHT)
+font_size_spinbox = Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=RIGHT)
 font_size_spinbox.delete(0, "end")
 font_size_spinbox.insert(0, settings_dict['barcode_font_size'])
 
-old_workbook_selection_button = tkinter.ttk.Button(master=old_workbook_file_frame, text="Select Original Workbook",
-                                                   command=lambda: select_folder_old_new_wrapper("old"))
+old_workbook_selection_button = Button(master=old_workbook_file_frame, text="Select Original Workbook",
+                                       command=lambda: select_folder_old_new_wrapper("old"))
 old_workbook_selection_button.pack(anchor='w')
 
-new_workbook_selection_button = tkinter.ttk.Button(master=new_workbook_file_frame, text="Select New Workbook",
-                                                   command=lambda: select_folder_old_new_wrapper("new"))
+new_workbook_selection_button = Button(master=new_workbook_file_frame, text="Select New Workbook",
+                                       command=lambda: select_folder_old_new_wrapper("new"))
 new_workbook_selection_button.pack(anchor='w')
 
-old_workbook_label = tkinter.ttk.Label(master=old_workbook_file_frame, text="No File Selected", relief=tkinter.SUNKEN)
-new_workbook_label = tkinter.ttk.Label(master=new_workbook_file_frame, text="No File Selected", relief=tkinter.SUNKEN)
+old_workbook_label = Label(master=old_workbook_file_frame, text="No File Selected", relief=SUNKEN)
+new_workbook_label = Label(master=new_workbook_file_frame, text="No File Selected", relief=SUNKEN)
 old_workbook_label.pack(anchor='w')
 new_workbook_label.pack(anchor='w')
-size_spinbox_dpi_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode DPI:", anchor=tkinter.E)
-size_spinbox_dpi_label.grid(row=0, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+size_spinbox_dpi_label = Label(master=size_spinbox_frame, text="Barcode DPI:", anchor=E)
+size_spinbox_dpi_label.grid(row=0, column=0, sticky=W + E, pady=2)
 size_spinbox_dpi_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-size_spinbox_height_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Height:", anchor=tkinter.E)
-size_spinbox_height_label.grid(row=1, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+size_spinbox_height_label = Label(master=size_spinbox_frame, text="Barcode Height:", anchor=E)
+size_spinbox_height_label.grid(row=1, column=0, sticky=W + E, pady=2)
 size_spinbox_height_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-border_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Border:", anchor=tkinter.E)
-border_spinbox_label.grid(row=2, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+border_spinbox_label = Label(master=size_spinbox_frame, text="Barcode Border:", anchor=E)
+border_spinbox_label.grid(row=2, column=0, sticky=W + E, pady=2)
 border_spinbox_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-font_size_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Text Size")
-font_size_spinbox_label.grid(row=3, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+font_size_spinbox_label = Label(master=size_spinbox_frame, text="Barcode Text Size")
+font_size_spinbox_label.grid(row=3, column=0, sticky=W + E, pady=2)
 font_size_spinbox_label.columnconfigure(0, weight=1)
-dpi_spinbox.grid(row=0, column=1, sticky=tkinter.E, pady=2)
-height_spinbox.grid(row=1, column=1, sticky=tkinter.E, pady=2)
-border_spinbox.grid(row=2, column=1, sticky=tkinter.E, pady=2)
-font_size_spinbox.grid(row=3, column=1, sticky=tkinter.E, pady=2)
+dpi_spinbox.grid(row=0, column=1, sticky=E, pady=2)
+height_spinbox.grid(row=1, column=1, sticky=E, pady=2)
+border_spinbox.grid(row=2, column=1, sticky=E, pady=2)
+font_size_spinbox.grid(row=3, column=1, sticky=E, pady=2)
 
-process_workbook_button = tkinter.ttk.Button(master=go_button_frame, text="Select Workbooks",
-                                             command=process_workbook_command_wrapper)
+process_workbook_button = Button(master=go_button_frame, text="Select Workbooks",
+                                 command=process_workbook_command_wrapper)
 
-process_workbook_button.configure(state=tkinter.DISABLED)
+process_workbook_button.configure(state=DISABLED)
 
-process_workbook_button.pack(side=tkinter.LEFT)
+process_workbook_button.pack(side=LEFT)
 
-progress_bar = tkinter.ttk.Progressbar(master=progress_bar_frame)
-progress_bar.pack(side=tkinter.RIGHT)
-progress_numbers = tkinter.ttk.Label(master=progress_bar_frame)
-progress_numbers.pack(side=tkinter.LEFT)
+progress_bar = Progressbar(master=progress_bar_frame)
+progress_bar.pack(side=RIGHT)
+progress_numbers = Label(master=progress_bar_frame)
+progress_numbers.pack(side=LEFT)
 
 if flags_count != 0:
-    tkinter.ttk.Label(root_window, text=flags_list_string).grid(row=0, column=0, columnspan=2)
+    Label(root_window, text=flags_list_string).grid(row=0, column=0, columnspan=2)
 old_workbook_file_frame.pack(anchor='w', pady=2)
 new_workbook_file_frame.pack(anchor='w', pady=2)
-both_workbook_frame.grid(row=1, column=0, sticky=tkinter.W, padx=5, pady=5)
+both_workbook_frame.grid(row=1, column=0, sticky=W, padx=5, pady=5)
 both_workbook_frame.columnconfigure(0, weight=1)
-size_spinbox_frame.grid(row=1, column=1, sticky=tkinter.E + tkinter.N, padx=5, pady=5)
+size_spinbox_frame.grid(row=1, column=1, sticky=E + N, padx=5, pady=5)
 size_spinbox_frame.columnconfigure(0, weight=1)
-go_button_frame.pack(side=tkinter.LEFT, anchor='w')
-progress_bar_frame.pack(side=tkinter.RIGHT, anchor='e')
-go_and_progress_frame.grid(row=2, column=0, columnspan=2, sticky=tkinter.W + tkinter.E, padx=5, pady=5)
+go_button_frame.pack(side=LEFT, anchor='w')
+progress_bar_frame.pack(side=RIGHT, anchor='e')
+go_and_progress_frame.grid(row=2, column=0, columnspan=2, sticky=W + E, padx=5, pady=5)
 go_and_progress_frame.columnconfigure(0, weight=1)
 root_window.columnconfigure(0, weight=1)
 
 root_window.minsize(400, root_window.winfo_height())
-root_window.resizable(width=tkinter.FALSE, height=tkinter.FALSE)
+root_window.resizable(width=FALSE, height=FALSE)
 
 root_window.mainloop()
