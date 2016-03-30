@@ -17,20 +17,25 @@ import argparse
 import textwrap
 import threading
 import platform
-import dataset
 import os
+import configparser
 
-settings_file_path = os.path.join(os.path.expanduser('~'), '.barcode insert utility settings.db')
+settings_file_path = os.path.join(os.path.expanduser('~'), '.barcode insert utility settings.cfg')
+
+config = configparser.RawConfigParser()
 
 if not os.path.exists(settings_file_path):
-    database_connection = dataset.connect('sqlite:///' + settings_file_path)
-    settings = database_connection['settings']
-    settings.insert(dict(initial_input_folder=os.path.expanduser('~'), initial_output_folder=os.path.expanduser('~'),
-                         barcode_dpi=120, barcode_module_height=5, barcode_border=0, barcode_font_size=6))
+    config.add_section('settings')
+    config.set('settings', 'initial_input_folder', os.path.expanduser('~'))
+    config.set('settings', 'initial_output_folder', os.path.expanduser('~'))
+    config.set('settings', 'barcode_dpi', '120')
+    config.set('settings', 'barcode_module_height', '5')
+    config.set('settings', 'barcode_border', '0')
+    config.set('settings', 'barcode_font_size', '6')
+    with open(settings_file_path, 'w') as configfile:
+        config.write(configfile)
 
-database_connection = dataset.connect('sqlite:///' + settings_file_path)
-settings = database_connection['settings']
-settings_dict = settings.find_one(id=1)
+config.read(settings_file_path)
 
 root_window = tkinter.Tk()
 
@@ -121,12 +126,13 @@ def select_folder_old_new_wrapper(selection):
     old_workbook_selection_button.configure(state=tkinter.DISABLED)
     if selection is "old":
         old_workbook_path_proposed = tkinter.filedialog.askopenfilename(
-            initialdir=settings_dict['initial_input_folder'],
+            initialdir=config.get('settings', 'initial_input_folder'),
             filetypes=[("Excel Spreadsheet", "*.xlsx")])
         file_is_xlsx = False
         if os.path.exists(old_workbook_path_proposed):
-            settings_dict['initial_input_folder'] = os.path.dirname(old_workbook_path)
-            settings.update(settings_dict, ['id'])
+            config.set('settings', 'initial_input_folder', os.path.dirname(old_workbook_path))
+            with open(settings_file_path, 'w') as configfile:
+                config.write(configfile)
             try:
                 openpyxl.load_workbook(old_workbook_path_proposed, read_only=True)
                 file_is_xlsx = True
@@ -138,13 +144,14 @@ def select_folder_old_new_wrapper(selection):
             old_workbook_label.configure(text=old_workbook_path_wrapped, justify=tkinter.LEFT)
     else:
         new_workbook_path_proposed = tkinter.filedialog.asksaveasfilename(
-            initialdir=settings_dict['initial_output_folder'],
+            initialdir=config.get('settings', 'initial_output_folder'),
             defaultextension='.xlsx',
             filetypes=[("Excel Spreadsheet", "*.xlsx")])
         if os.path.exists(os.path.dirname(new_workbook_path_proposed)):
             new_workbook_path = new_workbook_path_proposed
-            settings_dict['initial_output_folder'] = os.path.dirname(new_workbook_path)
-            settings.update(settings_dict, ['id'])
+            config.set('settings', 'initial_output_folder', os.path.dirname(new_workbook_path))
+            with open(settings_file_path, 'w') as configfile:
+                config.write(configfile)
             new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
             new_workbook_label.configure(text=new_workbook_path_wrapped, justify=tkinter.LEFT)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
@@ -288,11 +295,12 @@ def process_workbook_command_wrapper():
 
     new_workbook_selection_button.configure(state=tkinter.DISABLED)
     old_workbook_selection_button.configure(state=tkinter.DISABLED)
-    settings_dict['barcode_dpi'] = dpi_spinbox.get()
-    settings_dict['barcode_module_height'] = height_spinbox.get()
-    settings_dict['barcode_border'] = border_spinbox.get()
-    settings_dict['barcode_font_size'] = font_size_spinbox.get()
-    settings.update(settings_dict, ['id'])
+    config.set('settings', 'barcode_dpi' ,dpi_spinbox.get())
+    config.set('settings', 'barcode_module_height', height_spinbox.get())
+    config.set('settings', 'barcode_border', border_spinbox.get())
+    config.set('settings', 'barcode_font_size', font_size_spinbox.get())
+    with open(settings_file_path, 'w') as configfile:
+        config.write(configfile)
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.DISABLED)
     process_workbook_button.configure(state=tkinter.DISABLED, text="Processing Workbook")
@@ -324,16 +332,16 @@ size_spinbox_frame = tkinter.ttk.Frame(root_window)
 
 dpi_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=tkinter.RIGHT)
 dpi_spinbox.delete(0, "end")
-dpi_spinbox.insert(0, settings_dict['barcode_dpi'])
+dpi_spinbox.insert(0, config.getint('settings', 'barcode_dpi'))
 height_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=tkinter.RIGHT)
 height_spinbox.delete(0, "end")
-height_spinbox.insert(0, settings_dict['barcode_module_height'])
+height_spinbox.insert(0, config.getint('settings', 'barcode_module_height'))
 border_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=tkinter.RIGHT)
 border_spinbox.delete(0, "end")
-border_spinbox.insert(0, settings_dict['barcode_border'])
+border_spinbox.insert(0, config.getint('settings', 'barcode_border'))
 font_size_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=tkinter.RIGHT)
 font_size_spinbox.delete(0, "end")
-font_size_spinbox.insert(0, settings_dict['barcode_font_size'])
+font_size_spinbox.insert(0, config.getint('settings', 'barcode_font_size'))
 
 old_workbook_selection_button = tkinter.ttk.Button(master=old_workbook_file_frame, text="Select Original Workbook",
                                                    command=lambda: select_folder_old_new_wrapper("old"))
