@@ -232,10 +232,10 @@ def do_process_workbook():
                     ws.add_image(img)
                     save_counter += 1
             print_if_debug("success")
-            # This save in the loop frees references to the barcode images,
-            #  so that python's garbage collector can clear them
         except Exception as barcode_error:
             print_if_debug(barcode_error)
+        # This save in the loop frees references to the barcode images,
+        #  so that python's garbage collector can clear them
         if save_counter >= file_limit - 50:
             print_if_debug("saving intermediate workbook to free file handles")
             progress_bar.configure(mode='indeterminate', maximum=100)
@@ -273,10 +273,6 @@ def process_workbook_thread():
         print(process_folder_io_error)
         process_errors = True
         new_workbook_label.configure(text="Error saving, select another output file.", fg="red")
-    except MemoryError as process_folder_memory_error:
-        print(process_folder_memory_error)
-        process_errors = True
-        new_workbook_label.configure(text="Memory Error, workbook too large", fg="red")
     new_workbook_path = ""
     if not process_errors:
         new_workbook_label.configure(text="No File Selected")
