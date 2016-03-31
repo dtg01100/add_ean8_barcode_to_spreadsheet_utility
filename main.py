@@ -26,7 +26,7 @@ appname = "Barcode Insert Utility"
 config_folder = appdirs.user_data_dir(appname)
 if not os.path.exists(config_folder):
     os.makedirs(config_folder)
-settings_file_path = os.path.join(config_folder, '.barcode insert utility settings.cfg')
+settings_file_path = os.path.join(config_folder, 'barcode insert utility settings.cfg')
 
 config = configparser.RawConfigParser()
 
