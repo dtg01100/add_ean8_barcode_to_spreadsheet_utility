@@ -137,8 +137,8 @@ def select_folder_old_new_wrapper(selection):
         file_is_xlsx = False
         if os.path.exists(old_workbook_path_proposed):
             config.set('settings', 'initial_input_folder', os.path.dirname(old_workbook_path))
-            with open(settings_file_path, 'w') as configfile:
-                config.write(configfile)
+            with open(settings_file_path, 'w') as configuration_file:
+                config.write(configuration_file)
             try:
                 openpyxl.load_workbook(old_workbook_path_proposed, read_only=True)
                 file_is_xlsx = True
@@ -156,8 +156,8 @@ def select_folder_old_new_wrapper(selection):
         if os.path.exists(os.path.dirname(new_workbook_path_proposed)):
             new_workbook_path = new_workbook_path_proposed
             config.set('settings', 'initial_output_folder', os.path.dirname(new_workbook_path))
-            with open(settings_file_path, 'w') as configfile:
-                config.write(configfile)
+            with open(settings_file_path, 'w') as configuration_file:
+                config.write(configuration_file)
             new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
             new_workbook_label.configure(text=new_workbook_path_wrapped, justify=tkinter.LEFT)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
@@ -301,7 +301,7 @@ def process_workbook_command_wrapper():
 
     new_workbook_selection_button.configure(state=tkinter.DISABLED)
     old_workbook_selection_button.configure(state=tkinter.DISABLED)
-    config.set('settings', 'barcode_dpi' ,dpi_spinbox.get())
+    config.set('settings', 'barcode_dpi', dpi_spinbox.get())
     config.set('settings', 'barcode_module_height', height_spinbox.get())
     config.set('settings', 'barcode_border', border_spinbox.get())
     config.set('settings', 'barcode_font_size', font_size_spinbox.get())
