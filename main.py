@@ -21,6 +21,8 @@ import platform
 import os
 import configparser
 import appdirs
+import tendo.singleton
+instance = tendo.singleton.SingleInstance()
 
 appname = "Barcode Insert Utility"
 
