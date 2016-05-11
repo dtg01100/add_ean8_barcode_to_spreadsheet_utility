@@ -12,6 +12,7 @@ from barcode.writer import ImageWriter
 import tkinter
 import tkinter.ttk
 import tkinter.filedialog
+import tkinter.messagebox
 import tempfile
 import argparse
 import textwrap
@@ -28,6 +29,19 @@ if not os.path.exists(config_folder):
     os.makedirs(config_folder)
 settings_file_path = os.path.join(config_folder, 'barcode insert utility settings.cfg')
 
+launch_options = argparse.ArgumentParser()
+launch_options.add_argument('-d', '--debug', action='store_true', help="print debug output to stdout")
+launch_options.add_argument('-l', '--log', action='store_true', help="write stdout to log file")
+launch_options.add_argument('--keep_barcodes_in_home', action='store_true',
+                            help="temp folder in working directory")
+launch_options.add_argument('--keep_barcode_files', action='store_true', help="don't delete temp files")
+launch_options.add_argument('--reset_configuration', action='store_true', help="remove configuration file")
+args = launch_options.parse_args()
+
+if args.reset_configuration:
+    if os.path.exists(settings_file_path):
+        os.remove(settings_file_path)
+
 config = configparser.RawConfigParser()
 
 if not os.path.exists(settings_file_path):
@@ -38,20 +52,14 @@ if not os.path.exists(settings_file_path):
     config.set('settings', 'barcode_module_height', '5')
     config.set('settings', 'barcode_border', '0')
     config.set('settings', 'barcode_font_size', '6')
+    config.set('settings', 'input_data_column', 'B')
+    config.set('settings', 'barcode_output_column', 'A')
     with open(settings_file_path, 'w') as configfile:
         config.write(configfile)
 
 config.read(settings_file_path)
 
 root_window = tkinter.Tk()
-
-launch_options = argparse.ArgumentParser()
-launch_options.add_argument('-d', '--debug', action='store_true', help="print debug output to stdout")
-launch_options.add_argument('-l', '--log', action='store_true', help="write stdout to log file")
-launch_options.add_argument('--keep_barcodes_in_home', action='store_true',
-                            help="temp folder in working directory")
-launch_options.add_argument('--keep_barcode_files', action='store_true', help="don't delete temp files")
-args = launch_options.parse_args()
 
 root_window.title("Barcode Insert Utility (Beta)")
 
@@ -74,6 +82,25 @@ old_workbook_path = ""
 new_workbook_path = ""
 
 program_launch_cwd = os.getcwd()
+
+
+#  credit for the col_to_excel goes to Nodebody on stackoverflow, at this link: http://stackoverflow.com/a/19154642
+def _col_to_excel(col):  # col is 1 based
+    excel_col = str()
+    div = col
+    while div:
+        (div, mod) = divmod(div - 1, 26)  # will return (x, 0 .. 25)
+        excel_col = chr(mod + 65) + excel_col
+    return excel_col
+
+
+column_letter_list = []
+column_count = 0
+while column_count < 200:
+    column_count += 1
+    column_letter = _col_to_excel(column_count)
+    column_letter_list.append(column_letter)
+column_letter_tuple = tuple(column_letter_list)
 
 try:
     if platform.system() == 'Windows':
@@ -200,10 +227,16 @@ def do_process_workbook():
             progress_bar.configure(value=count)
             # get code from column "B", on current row, add a zero to the end to make seven digits
             print_if_debug("getting cell contents on line number " + str(count))
-            upc_barcode_number = ws["B" + str(count)].value + "0"
+            upc_barcode_number = ws[input_column_spinbox.get() + str(count)].value
             print_if_debug("cell contents are: " + upc_barcode_number)
             # select barcode type, specify barcode, and select image writer to save as png
-            ean = barcode.get('ean8', upc_barcode_number, writer=ImageWriter())
+            if len(upc_barcode_number) == 6:
+                upc_barcode_number += "0"
+                ean = barcode.get('ean8', upc_barcode_number, writer=ImageWriter())
+            elif len(upc_barcode_number) == 12:
+                ean = barcode.get('ean13', upc_barcode_number, writer=ImageWriter())
+            else:
+                raise ValueError
             # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
             # dpi is the conversion from svg image size in mm, to what the image writer thinks is inches.
             ean.default_writer_options['dpi'] = int(dpi_spinbox.get())
@@ -228,7 +261,7 @@ def do_process_workbook():
                                                fill='white')  # add border around image
                 width, height = img_save.size  # get image size of barcode with border
                 # resize cell to size of image
-                ws.column_dimensions['A'].width = int(math.ceil(float(width) * .15))
+                ws.column_dimensions[output_column_spinbox.get()].width = int(math.ceil(float(width) * .15))
                 ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
                 # write out image to file
                 with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as final_barcode_path:
@@ -240,7 +273,7 @@ def do_process_workbook():
                     print_if_debug("success")
                     # attach image to cell
                     print_if_debug("adding image to cell")
-                    img.anchor(ws.cell('A' + str(count)), anchortype='oneCell')
+                    img.anchor(ws.cell(output_column_spinbox.get() + str(count)), anchortype='oneCell')
                     # add image to cell
                     ws.add_image(img)
                     save_counter += 1
@@ -292,6 +325,11 @@ def process_workbook_thread():
 
 
 def process_workbook_command_wrapper():
+    if input_column_spinbox.get() == output_column_spinbox.get():
+        tkinter.messagebox.showerror(title="Cannot process workbook", message="Input and output are the same.\n"
+                                                                              "This will not work.")
+        return
+
     global new_workbook_path
 
     def kill_process_workbook():
@@ -305,6 +343,8 @@ def process_workbook_command_wrapper():
     config.set('settings', 'barcode_module_height', height_spinbox.get())
     config.set('settings', 'barcode_border', border_spinbox.get())
     config.set('settings', 'barcode_font_size', font_size_spinbox.get())
+    config.set('settings', 'input_data_column', input_column_spinbox.get())
+    config.set('settings', 'barcode_output_column', output_column_spinbox.get())
     with open(settings_file_path, 'w') as configfile:
         config.write(configfile)
     for child in size_spinbox_frame.winfo_children():
@@ -348,6 +388,12 @@ border_spinbox.insert(0, config.getint('settings', 'barcode_border'))
 font_size_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=tkinter.RIGHT)
 font_size_spinbox.delete(0, "end")
 font_size_spinbox.insert(0, config.getint('settings', 'barcode_font_size'))
+input_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
+input_column_spinbox.delete(0, "end")
+input_column_spinbox.insert(0, config.get('settings', 'input_data_column'))
+output_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
+output_column_spinbox.delete(0, "end")
+output_column_spinbox.insert(0, config.get('settings', 'barcode_output_column'))
 
 old_workbook_selection_button = tkinter.ttk.Button(master=old_workbook_file_frame, text="Select Original Workbook",
                                                    command=lambda: select_folder_old_new_wrapper("old"))
@@ -370,13 +416,21 @@ size_spinbox_height_label.columnconfigure(0, weight=1)  # make this stretch to f
 border_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Border:", anchor=tkinter.E)
 border_spinbox_label.grid(row=2, column=0, sticky=tkinter.W + tkinter.E, pady=2)
 border_spinbox_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-font_size_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Text Size")
-font_size_spinbox_label.grid(row=3, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+font_size_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Text Size:", anchor=tkinter.E)
+font_size_spinbox_label.grid(row=0, column=2, sticky=tkinter.W + tkinter.E, pady=2)
 font_size_spinbox_label.columnconfigure(0, weight=1)
-dpi_spinbox.grid(row=0, column=1, sticky=tkinter.E, pady=2)
-height_spinbox.grid(row=1, column=1, sticky=tkinter.E, pady=2)
-border_spinbox.grid(row=2, column=1, sticky=tkinter.E, pady=2)
-font_size_spinbox.grid(row=3, column=1, sticky=tkinter.E, pady=2)
+input_column_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Input Column:", anchor=tkinter.E)
+input_column_spinbox_label.grid(row=1, column=2, sticky=tkinter.W + tkinter.E, pady=2)
+input_column_spinbox_label.columnconfigure(0, weight=1)
+output_column_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Output Column:", anchor=tkinter.E)
+output_column_spinbox_label.grid(row=2, column=2, sticky=tkinter.W + tkinter.E, pady=2)
+output_column_spinbox_label.columnconfigure(0, weight=1)
+dpi_spinbox.grid(row=0, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
+height_spinbox.grid(row=1, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
+border_spinbox.grid(row=2, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
+font_size_spinbox.grid(row=0, column=3, sticky=tkinter.E, pady=2)
+input_column_spinbox.grid(row=1, column=3, sticky=tkinter.E, pady=2)
+output_column_spinbox.grid(row=2, column=3, sticky=tkinter.E, pady=2)
 
 process_workbook_button = tkinter.ttk.Button(master=go_button_frame, text="Select Workbooks",
                                              command=process_workbook_command_wrapper)
