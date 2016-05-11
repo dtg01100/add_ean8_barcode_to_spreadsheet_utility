@@ -63,7 +63,7 @@ config.read(settings_file_path)
 
 root_window = tkinter.Tk()
 
-root_window.title("Barcode Insert Utility (Beta)")
+root_window.title("Barcode Insert Utility")
 
 flags_list_string = "Flags="
 flags_count = 0
@@ -78,6 +78,9 @@ if args.keep_barcodes_in_home:
     flags_count += 1
 if args.keep_barcode_files:
     flags_list_string += "(Keep Barcodes)"
+    flags_count += 1
+if args.reset_configuration:
+    flags_list_string += "(Reset Configuration)"
     flags_count += 1
 
 old_workbook_path = ""
@@ -376,7 +379,7 @@ new_workbook_file_frame = tkinter.ttk.Frame(both_workbook_frame)
 go_and_progress_frame = tkinter.ttk.Frame(root_window)
 go_button_frame = tkinter.ttk.Frame(go_and_progress_frame)
 progress_bar_frame = tkinter.ttk.Frame(go_and_progress_frame)
-size_spinbox_frame = tkinter.ttk.Frame(root_window)
+size_spinbox_frame = tkinter.ttk.Frame(root_window, relief=tkinter.GROOVE, borderwidth=2)
 
 dpi_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=tkinter.RIGHT)
 dpi_spinbox.delete(0, "end")
@@ -407,8 +410,8 @@ new_workbook_selection_button.pack(anchor='w')
 
 old_workbook_label = tkinter.ttk.Label(master=old_workbook_file_frame, text="No File Selected", relief=tkinter.SUNKEN)
 new_workbook_label = tkinter.ttk.Label(master=new_workbook_file_frame, text="No File Selected", relief=tkinter.SUNKEN)
-old_workbook_label.pack(anchor='w')
-new_workbook_label.pack(anchor='w')
+old_workbook_label.pack(anchor='w', padx=(1, 0))
+new_workbook_label.pack(anchor='w', padx=(1, 0))
 size_spinbox_dpi_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode DPI:", anchor=tkinter.E)
 size_spinbox_dpi_label.grid(row=0, column=0, sticky=tkinter.W + tkinter.E, pady=2)
 size_spinbox_dpi_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
@@ -449,10 +452,10 @@ progress_numbers.pack(side=tkinter.LEFT)
 if flags_count != 0:
     tkinter.ttk.Label(root_window, text=flags_list_string).grid(row=0, column=0, columnspan=2)
 old_workbook_file_frame.pack(anchor='w', pady=2)
-new_workbook_file_frame.pack(anchor='w', pady=2)
+new_workbook_file_frame.pack(anchor='w', pady=(3, 2))
 both_workbook_frame.grid(row=1, column=0, sticky=tkinter.W, padx=5, pady=5)
 both_workbook_frame.columnconfigure(0, weight=1)
-size_spinbox_frame.grid(row=1, column=1, sticky=tkinter.E + tkinter.N, padx=5, pady=5)
+size_spinbox_frame.grid(row=1, column=1, sticky=tkinter.E + tkinter.N, padx=5, pady=(8, 5))
 size_spinbox_frame.columnconfigure(0, weight=1)
 go_button_frame.pack(side=tkinter.LEFT, anchor='w')
 progress_bar_frame.pack(side=tkinter.RIGHT, anchor='e')
