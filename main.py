@@ -24,7 +24,7 @@ import appdirs
 import tendo.singleton
 instance = tendo.singleton.SingleInstance()
 
-version = '1.2.0'
+version = '1.2.1'
 
 appname = "Barcode Insert Utility"
 
@@ -89,6 +89,8 @@ old_workbook_path = ""
 new_workbook_path = ""
 
 program_launch_cwd = os.getcwd()
+
+process_workbook_keep_alive = True
 
 
 #  credit for the col_to_excel goes to Nodebody on stackoverflow, at this link: http://stackoverflow.com/a/19154642
@@ -354,8 +356,8 @@ def process_workbook_command_wrapper():
     config.set('settings', 'barcode_font_size', font_size_spinbox.get())
     config.set('settings', 'input_data_column', input_column_spinbox.get())
     config.set('settings', 'barcode_output_column', output_column_spinbox.get())
-    with open(settings_file_path, 'w') as configfile:
-        config.write(configfile)
+    with open(settings_file_path, 'w') as configfile_before_processing:
+        config.write(configfile_before_processing)
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.DISABLED)
     process_workbook_button.configure(state=tkinter.DISABLED, text="Processing Workbook")
