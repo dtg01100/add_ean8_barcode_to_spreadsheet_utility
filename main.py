@@ -24,13 +24,15 @@ import appdirs
 import tendo.singleton
 instance = tendo.singleton.SingleInstance()
 
-version = '1.2.1'
+version = '1.2.2'
 
 appname = "Barcode Insert Utility"
 
 config_folder = appdirs.user_data_dir(appname)
-if not os.path.exists(config_folder):
+try:
     os.makedirs(config_folder)
+except FileExistsError:
+    pass
 settings_file_path = os.path.join(config_folder, 'barcode insert utility settings.cfg')
 
 launch_options = argparse.ArgumentParser()
@@ -43,8 +45,10 @@ launch_options.add_argument('--reset_configuration', action='store_true', help="
 args = launch_options.parse_args()
 
 if args.reset_configuration:
-    if os.path.exists(settings_file_path):
+    try:
         os.remove(settings_file_path)
+    except FileNotFoundError:
+        pass
 
 config = configparser.RawConfigParser()
 
@@ -239,7 +243,7 @@ def do_process_workbook():
             progress_bar.configure(value=count)
             # get code from column "B", on current row, add a zero to the end to make seven digits
             print_if_debug("getting cell contents on line number " + str(count))
-            upc_barcode_number = ws[input_column_spinbox.get() + str(count)].value
+            upc_barcode_number = str(ws[input_column_spinbox.get() + str(count)].value)
             print_if_debug("cell contents are: " + upc_barcode_number)
             # select barcode type, specify barcode, and select image writer to save as png
             if len(upc_barcode_number) == 6:
