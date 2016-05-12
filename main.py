@@ -24,7 +24,7 @@ import appdirs
 import tendo.singleton
 instance = tendo.singleton.SingleInstance()
 
-version = '1.0.0'
+version = '1.1.0'
 
 appname = "Barcode Insert Utility"
 
@@ -161,6 +161,7 @@ print_if_debug("File limit is: " + str(file_limit))
 def select_folder_old_new_wrapper(selection):
     global old_workbook_path
     global new_workbook_path
+    global files_lock
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.DISABLED)
     new_workbook_selection_button.configure(state=tkinter.DISABLED)
@@ -197,6 +198,7 @@ def select_folder_old_new_wrapper(selection):
             new_workbook_label.configure(text=new_workbook_path_wrapped, justify=tkinter.LEFT)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
         process_workbook_button.configure(state=tkinter.NORMAL, text="Process Workbook")
+        files_lock = False
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.NORMAL)
     new_workbook_selection_button.configure(state=tkinter.NORMAL)
@@ -319,6 +321,13 @@ def do_process_workbook():
     progress_numbers.configure(text="")
 
 
+def set_process_button_state():
+    if files_lock is False and input_column_spinbox.get() != output_column_spinbox.get():
+        process_workbook_button.configure(state=tkinter.NORMAL)
+    else:
+        process_workbook_button.configure(state=tkinter.DISABLED)
+
+
 def process_workbook_thread():
     global new_workbook_path
     process_errors = False
@@ -336,12 +345,8 @@ def process_workbook_thread():
 
 
 def process_workbook_command_wrapper():
-    if input_column_spinbox.get() == output_column_spinbox.get():
-        tkinter.messagebox.showerror(title="Cannot process workbook", message="Input and output are the same.\n"
-                                                                              "This will not work.")
-        return
-
     global new_workbook_path
+    global files_lock
 
     def kill_process_workbook():
         global process_workbook_keep_alive
@@ -361,6 +366,7 @@ def process_workbook_command_wrapper():
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.DISABLED)
     process_workbook_button.configure(state=tkinter.DISABLED, text="Processing Workbook")
+    files_lock = True
     cancel_process_workbook_button = tkinter.ttk.Button(master=go_button_frame, command=kill_process_workbook,
                                                         text="Cancel")
     cancel_process_workbook_button.pack(side=tkinter.RIGHT)
@@ -399,10 +405,10 @@ border_spinbox.insert(0, config.getint('settings', 'barcode_border'))
 font_size_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=tkinter.RIGHT)
 font_size_spinbox.delete(0, "end")
 font_size_spinbox.insert(0, config.getint('settings', 'barcode_font_size'))
-input_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
+input_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT, command=set_process_button_state)
 input_column_spinbox.delete(0, "end")
 input_column_spinbox.insert(0, config.get('settings', 'input_data_column'))
-output_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
+output_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT, command=set_process_button_state)
 output_column_spinbox.delete(0, "end")
 output_column_spinbox.insert(0, config.get('settings', 'barcode_output_column'))
 
@@ -447,6 +453,7 @@ process_workbook_button = tkinter.ttk.Button(master=go_button_frame, text="Selec
                                              command=process_workbook_command_wrapper)
 
 process_workbook_button.configure(state=tkinter.DISABLED)
+files_lock = True
 
 process_workbook_button.pack(side=tkinter.LEFT)
 
