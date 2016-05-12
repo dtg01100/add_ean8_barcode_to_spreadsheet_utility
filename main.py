@@ -24,6 +24,8 @@ import appdirs
 import tendo.singleton
 instance = tendo.singleton.SingleInstance()
 
+version = '1.0.0'
+
 appname = "Barcode Insert Utility"
 
 config_folder = appdirs.user_data_dir(appname)
@@ -63,7 +65,7 @@ config.read(settings_file_path)
 
 root_window = tkinter.Tk()
 
-root_window.title("Barcode Insert Utility")
+root_window.title("Barcode Insert Utility " + version)
 
 flags_list_string = "Flags="
 flags_count = 0
@@ -151,6 +153,7 @@ def print_if_debug(string):
     if args.debug:
         print(string)
 
+print_if_debug("Barcode Insert Utility version " + version)
 
 print_if_debug("File limit is: " + str(file_limit))
 
@@ -236,11 +239,14 @@ def do_process_workbook():
             print_if_debug("cell contents are: " + upc_barcode_number)
             # select barcode type, specify barcode, and select image writer to save as png
             if len(upc_barcode_number) == 6:
+                print_if_debug("detected 6 digit number. adding trailing zero and creating ean8 barcode")
                 upc_barcode_number += "0"
                 ean = barcode.get('ean8', upc_barcode_number, writer=ImageWriter())
             elif len(upc_barcode_number) == 12:
+                print_if_debug("detected 12 digit number, creating ean13 barcode")
                 ean = barcode.get('ean13', upc_barcode_number, writer=ImageWriter())
             else:
+                print_if_debug("cell doesn't contain a 6 or 12 digit number, skipping row")
                 raise ValueError
             # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
             # dpi is the conversion from svg image size in mm, to what the image writer thinks is inches.
