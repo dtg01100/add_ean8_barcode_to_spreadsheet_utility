@@ -24,7 +24,7 @@ import appdirs
 import tendo.singleton
 instance = tendo.singleton.SingleInstance()
 
-version = '1.2.2'
+version = '1.2.3'
 
 appname = "Barcode Insert Utility"
 
@@ -167,7 +167,6 @@ print_if_debug("File limit is: " + str(file_limit))
 def select_folder_old_new_wrapper(selection):
     global old_workbook_path
     global new_workbook_path
-    global files_lock
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.DISABLED)
     new_workbook_selection_button.configure(state=tkinter.DISABLED)
@@ -204,7 +203,6 @@ def select_folder_old_new_wrapper(selection):
             new_workbook_label.configure(text=new_workbook_path_wrapped, justify=tkinter.LEFT)
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
         process_workbook_button.configure(state=tkinter.NORMAL, text="Process Workbook")
-        files_lock = False
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.NORMAL)
     new_workbook_selection_button.configure(state=tkinter.NORMAL)
@@ -345,7 +343,6 @@ def process_workbook_thread():
 
 def process_workbook_command_wrapper():
     global new_workbook_path
-    global files_lock
 
     def kill_process_workbook():
         global process_workbook_keep_alive
@@ -365,7 +362,6 @@ def process_workbook_command_wrapper():
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.DISABLED)
     process_workbook_button.configure(state=tkinter.DISABLED, text="Processing Workbook")
-    files_lock = True
     cancel_process_workbook_button = tkinter.ttk.Button(master=go_button_frame, command=kill_process_workbook,
                                                         text="Cancel")
     cancel_process_workbook_button.pack(side=tkinter.RIGHT)
@@ -395,18 +391,23 @@ size_spinbox_frame = tkinter.ttk.Frame(root_window, relief=tkinter.GROOVE, borde
 dpi_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=tkinter.RIGHT)
 dpi_spinbox.delete(0, "end")
 dpi_spinbox.insert(0, config.getint('settings', 'barcode_dpi'))
+
 height_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=tkinter.RIGHT)
 height_spinbox.delete(0, "end")
 height_spinbox.insert(0, config.getint('settings', 'barcode_module_height'))
+
 border_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=tkinter.RIGHT)
 border_spinbox.delete(0, "end")
 border_spinbox.insert(0, config.getint('settings', 'barcode_border'))
+
 font_size_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=tkinter.RIGHT)
 font_size_spinbox.delete(0, "end")
 font_size_spinbox.insert(0, config.getint('settings', 'barcode_font_size'))
+
 input_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
 input_column_spinbox.delete(0, "end")
 input_column_spinbox.insert(0, config.get('settings', 'input_data_column'))
+
 output_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
 output_column_spinbox.delete(0, "end")
 output_column_spinbox.insert(0, config.get('settings', 'barcode_output_column'))
@@ -421,29 +422,38 @@ new_workbook_selection_button.pack(anchor='w')
 
 old_workbook_label = tkinter.ttk.Label(master=old_workbook_file_frame, text="No File Selected", relief=tkinter.SUNKEN)
 new_workbook_label = tkinter.ttk.Label(master=new_workbook_file_frame, text="No File Selected", relief=tkinter.SUNKEN)
+
 old_workbook_label.pack(anchor='w', padx=(1, 0))
 new_workbook_label.pack(anchor='w', padx=(1, 0))
+
 size_spinbox_dpi_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode DPI:", anchor=tkinter.E)
 size_spinbox_dpi_label.grid(row=0, column=0, sticky=tkinter.W + tkinter.E, pady=2)
 size_spinbox_dpi_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
+
 size_spinbox_height_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Height:", anchor=tkinter.E)
 size_spinbox_height_label.grid(row=1, column=0, sticky=tkinter.W + tkinter.E, pady=2)
 size_spinbox_height_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
+
 border_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Border:", anchor=tkinter.E)
 border_spinbox_label.grid(row=2, column=0, sticky=tkinter.W + tkinter.E, pady=2)
 border_spinbox_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
+
 font_size_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Text Size:", anchor=tkinter.E)
 font_size_spinbox_label.grid(row=0, column=2, sticky=tkinter.W + tkinter.E, pady=2)
 font_size_spinbox_label.columnconfigure(0, weight=1)
+
 input_column_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Input Column:", anchor=tkinter.E)
 input_column_spinbox_label.grid(row=1, column=2, sticky=tkinter.W + tkinter.E, pady=2)
 input_column_spinbox_label.columnconfigure(0, weight=1)
+
 output_column_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Output Column:", anchor=tkinter.E)
 output_column_spinbox_label.grid(row=2, column=2, sticky=tkinter.W + tkinter.E, pady=2)
 output_column_spinbox_label.columnconfigure(0, weight=1)
+
 dpi_spinbox.grid(row=0, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
 height_spinbox.grid(row=1, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
 border_spinbox.grid(row=2, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
+
 font_size_spinbox.grid(row=0, column=3, sticky=tkinter.E, pady=2)
 input_column_spinbox.grid(row=1, column=3, sticky=tkinter.E, pady=2)
 output_column_spinbox.grid(row=2, column=3, sticky=tkinter.E, pady=2)
@@ -452,7 +462,6 @@ process_workbook_button = tkinter.ttk.Button(master=go_button_frame, text="Selec
                                              command=process_workbook_command_wrapper)
 
 process_workbook_button.configure(state=tkinter.DISABLED)
-files_lock = True
 
 process_workbook_button.pack(side=tkinter.LEFT)
 
