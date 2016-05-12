@@ -24,7 +24,7 @@ import appdirs
 import tendo.singleton
 instance = tendo.singleton.SingleInstance()
 
-version = '1.1.0'
+version = '1.2.0'
 
 appname = "Barcode Insert Utility"
 
@@ -321,13 +321,6 @@ def do_process_workbook():
     progress_numbers.configure(text="")
 
 
-def set_process_button_state():
-    if files_lock is False and input_column_spinbox.get() != output_column_spinbox.get():
-        process_workbook_button.configure(state=tkinter.NORMAL)
-    else:
-        process_workbook_button.configure(state=tkinter.DISABLED)
-
-
 def process_workbook_thread():
     global new_workbook_path
     process_errors = False
@@ -405,10 +398,10 @@ border_spinbox.insert(0, config.getint('settings', 'barcode_border'))
 font_size_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=tkinter.RIGHT)
 font_size_spinbox.delete(0, "end")
 font_size_spinbox.insert(0, config.getint('settings', 'barcode_font_size'))
-input_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT, command=set_process_button_state)
+input_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
 input_column_spinbox.delete(0, "end")
 input_column_spinbox.insert(0, config.get('settings', 'input_data_column'))
-output_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT, command=set_process_button_state)
+output_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
 output_column_spinbox.delete(0, "end")
 output_column_spinbox.insert(0, config.get('settings', 'barcode_output_column'))
 
