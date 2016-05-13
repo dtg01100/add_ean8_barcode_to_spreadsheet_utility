@@ -25,7 +25,7 @@ import tendo.singleton
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.2.4'
+version = '1.2.5'
 
 appname = "Barcode Insert Utility"
 
@@ -245,6 +245,10 @@ def do_process_workbook():
             print_if_debug("getting cell contents on line number " + str(count))
             upc_barcode_number = str(ws[input_column_spinbox.get() + str(count)].value)
             print_if_debug("cell contents are: " + upc_barcode_number)
+            try:
+                _ = int(upc_barcode_number)  # check that "upc_barcode_number" can be cast to int
+            except ValueError:
+                raise ValueError("Cell contents are not an integer, skipping")
             # select barcode type, specify barcode, and select image writer to save as png
             if len(upc_barcode_number) == 6:
                 print_if_debug("detected 6 digit number. adding trailing zero and creating ean8 barcode")
@@ -298,7 +302,8 @@ def do_process_workbook():
                     save_counter += 1
             print_if_debug("success")
         except Exception as barcode_error:
-            print_if_debug(barcode_error)
+            if barcode_error != "":
+                print_if_debug(barcode_error)
         # This save in the loop frees references to the barcode images,
         #  so that python's garbage collector can clear them
         if save_counter >= file_limit - 50:
@@ -333,10 +338,11 @@ def process_workbook_thread():
     except (IOError, OSError):
         print("Error saving file")
         process_errors = True
+        new_workbook_label.configure(text="Error saving, select another output file.", background='red')
+    finally:
         progress_bar.stop()
         progress_bar.configure(maximum=100, value=0, mode='determinate')
         progress_numbers.configure(text="")
-        new_workbook_label.configure(text="Error saving, select another output file.", background='red')
     new_workbook_path = ""
     if not process_errors:
         new_workbook_label.configure(text="No File Selected")
