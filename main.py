@@ -258,8 +258,7 @@ def do_process_workbook():
                 print_if_debug("detected 12 digit number, creating ean13 barcode")
                 ean = barcode.get('ean13', upc_barcode_number, writer=ImageWriter())
             else:
-                print_if_debug("cell doesn't contain a 6 or 12 digit number, skipping row")
-                raise ValueError
+                raise ValueError("cell doesn't contain a 6 or 12 digit number, skipping row")
             # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
             # dpi is the conversion from svg image size in mm, to what the image writer thinks is inches.
             ean.default_writer_options['dpi'] = int(dpi_spinbox.get())
@@ -302,8 +301,7 @@ def do_process_workbook():
                     save_counter += 1
             print_if_debug("success")
         except Exception as barcode_error:
-            if barcode_error != "":
-                print_if_debug(barcode_error)
+            print_if_debug(barcode_error)
         # This save in the loop frees references to the barcode images,
         #  so that python's garbage collector can clear them
         if save_counter >= file_limit - 50:
