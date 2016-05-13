@@ -22,9 +22,10 @@ import os
 import configparser
 import appdirs
 import tendo.singleton
+
 instance = tendo.singleton.SingleInstance()
 
-version = '1.2.3'
+version = '1.2.4'
 
 appname = "Barcode Insert Utility"
 
@@ -200,7 +201,8 @@ def select_folder_old_new_wrapper(selection):
             with open(settings_file_path, 'w') as configuration_file:
                 config.write(configuration_file)
             new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
-            new_workbook_label.configure(text=new_workbook_path_wrapped, justify=tkinter.LEFT)
+            new_workbook_label.configure(text=new_workbook_path_wrapped, justify=tkinter.LEFT,
+                                         background=old_workbook_label._root().cget('background'))
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
         process_workbook_button.configure(state=tkinter.NORMAL, text="Process Workbook")
     for child in size_spinbox_frame.winfo_children():
@@ -320,10 +322,6 @@ def do_process_workbook():
         shutil.rmtree(tempdir)
         print_if_debug("success")
 
-    progress_bar.stop()
-    progress_bar.configure(maximum=100, value=0, mode='determinate')
-    progress_numbers.configure(text="")
-
 
 def process_workbook_thread():
     global new_workbook_path
@@ -332,10 +330,13 @@ def process_workbook_thread():
     process_workbook_keep_alive = True
     try:
         do_process_workbook()
-    except IOError as process_folder_io_error:
-        print(process_folder_io_error)
+    except (IOError, OSError):
+        print("Error saving file")
         process_errors = True
-        new_workbook_label.configure(text="Error saving, select another output file.", fg="red")
+        progress_bar.stop()
+        progress_bar.configure(maximum=100, value=0, mode='determinate')
+        progress_numbers.configure(text="")
+        new_workbook_label.configure(text="Error saving, select another output file.", background='red')
     new_workbook_path = ""
     if not process_errors:
         new_workbook_label.configure(text="No File Selected")
