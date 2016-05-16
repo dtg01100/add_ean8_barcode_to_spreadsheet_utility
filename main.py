@@ -25,7 +25,7 @@ import tendo.singleton
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.2.6'
+version = '1.3.0'
 
 appname = "Barcode Insert Utility"
 
@@ -116,6 +116,43 @@ while column_count < 200:
     column_letter_list.append(column_letter)
 column_letter_tuple = tuple(column_letter_list)
 
+
+
+def invalid_configuration_error():
+    tkinter.messagebox.showerror(
+        message="Configuration file is broken, relaunch program with the option '--reset_configuration'")
+    raise SystemExit
+
+barcode_dpi_test = None
+barcode_module_height_test = None
+barcode_border_test = None
+barcode_font_size_test = None
+
+try:
+    barcode_dpi_test = config.getint('settings', 'barcode_dpi')
+    barcode_module_height_test = config.getint('settings', 'barcode_module_height')
+    barcode_border_test = config.getint('settings', 'barcode_border')
+    barcode_font_size_test = config.getint('settings', 'barcode_font_size')
+except ValueError:
+    invalid_configuration_error()
+
+
+invalid_configuration = False
+input_barcode_test_column = config.get('settings', 'input_data_column')
+output_barcode_test_column = config.get('settings', 'barcode_output_column')
+if input_barcode_test_column not in column_letter_list or output_barcode_test_column not in column_letter_list:
+    invalid_configuration = True
+if barcode_dpi_test not in range(120, 400):
+    invalid_configuration = True
+if barcode_module_height_test not in range(5, 50):
+    invalid_configuration = True
+if barcode_border_test not in range(0, 25):
+    invalid_configuration = True
+if barcode_font_size_test not in range(0, 15):
+    invalid_configuration = True
+if invalid_configuration:
+    invalid_configuration_error()
+
 try:
     if platform.system() == 'Windows':
         import win32file
@@ -159,6 +196,7 @@ if args.debug:
 def print_if_debug(string):
     if args.debug:
         print(string)
+
 
 print_if_debug("Barcode Insert Utility version " + version)
 
