@@ -25,7 +25,7 @@ import tendo.singleton
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.3.0'
+version = '1.3.1'
 
 appname = "Barcode Insert Utility"
 
@@ -36,6 +36,7 @@ except FileExistsError:
     pass
 settings_file_path = os.path.join(config_folder, 'barcode insert utility settings.cfg')
 
+# read launch options
 launch_options = argparse.ArgumentParser()
 launch_options.add_argument('-d', '--debug', action='store_true', help="print debug output to stdout")
 launch_options.add_argument('-l', '--log', action='store_true', help="write stdout to log file")
@@ -45,7 +46,7 @@ launch_options.add_argument('--keep_barcode_files', action='store_true', help="d
 launch_options.add_argument('--reset_configuration', action='store_true', help="remove configuration file")
 args = launch_options.parse_args()
 
-if args.reset_configuration:
+if args.reset_configuration:  # remove configuration file if reset_configuration flag is set
     try:
         os.remove(settings_file_path)
     except FileNotFoundError:
@@ -66,12 +67,13 @@ if not os.path.exists(settings_file_path):
     with open(settings_file_path, 'w') as configfile:
         config.write(configfile)
 
-config.read(settings_file_path)
+config.read(settings_file_path)  # open config file
 
 root_window = tkinter.Tk()
 
 root_window.title("Barcode Insert Utility " + version)
 
+# this builds a list of the launch flags
 flags_list_string = "Flags="
 flags_count = 0
 if args.debug:
@@ -117,17 +119,21 @@ while column_count < 200:
 column_letter_tuple = tuple(column_letter_list)
 
 
-
 def invalid_configuration_error():
     tkinter.messagebox.showerror(
         message="Configuration file is broken, relaunch program with the option '--reset_configuration'")
     raise SystemExit
 
+# set initial variables for configuration file test
 barcode_dpi_test = None
 barcode_module_height_test = None
 barcode_border_test = None
 barcode_font_size_test = None
+invalid_configuration = False
+input_barcode_test_column = config.get('settings', 'input_data_column')
+output_barcode_test_column = config.get('settings', 'barcode_output_column')
 
+# check to see if the following four are integers
 try:
     barcode_dpi_test = config.getint('settings', 'barcode_dpi')
     barcode_module_height_test = config.getint('settings', 'barcode_module_height')
@@ -136,10 +142,7 @@ try:
 except ValueError:
     invalid_configuration_error()
 
-
-invalid_configuration = False
-input_barcode_test_column = config.get('settings', 'input_data_column')
-output_barcode_test_column = config.get('settings', 'barcode_output_column')
+# check that values are in acceptable ranges
 if input_barcode_test_column not in column_letter_list or output_barcode_test_column not in column_letter_list:
     invalid_configuration = True
 if barcode_dpi_test not in range(120, 400):
@@ -150,9 +153,10 @@ if barcode_border_test not in range(0, 25):
     invalid_configuration = True
 if barcode_font_size_test not in range(0, 15):
     invalid_configuration = True
-if invalid_configuration:
+if invalid_configuration:  # if any of the previous values are incorrect, show an error dialog and close out
     invalid_configuration_error()
 
+# the following sets internal open file limits
 try:
     if platform.system() == 'Windows':
         import win32file
@@ -193,6 +197,7 @@ if args.debug:
     print(launch_options.parse_args())
 
 
+# this is a wrapper function for print, so that we can have it only spam stdout when debug is set
 def print_if_debug(string):
     if args.debug:
         print(string)
@@ -203,6 +208,9 @@ print_if_debug("Barcode Insert Utility version " + version)
 print_if_debug("File limit is: " + str(file_limit))
 
 
+# this is the workbook selector, the code was a bit of an experiment and is a bit of a pain to debug.
+# not enough of the logic is shared between the two codepaths to make it worth the complexity
+# ill probably rewrite this at some point.
 def select_folder_old_new_wrapper(selection):
     global old_workbook_path
     global new_workbook_path
@@ -245,11 +253,13 @@ def select_folder_old_new_wrapper(selection):
         process_workbook_button.configure(state=tkinter.NORMAL, text="Process Workbook")
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.NORMAL)
+    set_spinbutton_state_read_only()
     new_workbook_selection_button.configure(state=tkinter.NORMAL)
     old_workbook_selection_button.configure(state=tkinter.NORMAL)
 
 
 def do_process_workbook():
+    # this is called as a background thread to ensure the interface is responsive
     print_if_debug("creating temp directory")
     if not args.keep_barcodes_in_home:
         tempdir = tempfile.mkdtemp()
@@ -365,6 +375,7 @@ def do_process_workbook():
 
 
 def process_workbook_thread():
+    # this function handles setup and teardown of the process workbook thread
     global new_workbook_path
     process_errors = False
     global process_workbook_keep_alive
@@ -388,10 +399,13 @@ def process_workbook_command_wrapper():
     global new_workbook_path
 
     def kill_process_workbook():
+        # this function sets the keep alive flag for the processing workbook thread to false,
+        # this lets the thread exit gracefully, and clean up after itself
         global process_workbook_keep_alive
         process_workbook_keep_alive = False
         cancel_process_workbook_button.configure(text="Cancelling", state=tkinter.DISABLED)
 
+    # this sets interface elements to disabled, and then saves config options to file
     new_workbook_selection_button.configure(state=tkinter.DISABLED)
     old_workbook_selection_button.configure(state=tkinter.DISABLED)
     config.set('settings', 'barcode_dpi', dpi_spinbox.get())
@@ -417,6 +431,7 @@ def process_workbook_command_wrapper():
     old_workbook_selection_button.configure(state=tkinter.NORMAL)
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.NORMAL)
+    set_spinbutton_state_read_only()
     if process_workbook_keep_alive:
         process_workbook_button.configure(text="Done Processing Workbook")
     else:
@@ -431,35 +446,42 @@ go_button_frame = tkinter.ttk.Frame(go_and_progress_frame)
 progress_bar_frame = tkinter.ttk.Frame(go_and_progress_frame)
 size_spinbox_frame = tkinter.ttk.Frame(root_window, relief=tkinter.GROOVE, borderwidth=2)
 
+
+def set_spinbutton_state_read_only():
+    # this sets all spinbuttons to readonly, this prevents invalid input from being inserted.
+    # eventually, ill get a validator working and this will be unnecessary
+    dpi_spinbox.configure(state='readonly')
+    height_spinbox.configure(state='readonly')
+    border_spinbox.configure(state='readonly')
+    font_size_spinbox.configure(state='readonly')
+    input_column_spinbox.configure(state='readonly')
+    output_column_spinbox.configure(state='readonly')
+
 dpi_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=tkinter.RIGHT)
 dpi_spinbox.delete(0, "end")
 dpi_spinbox.insert(0, config.getint('settings', 'barcode_dpi'))
-dpi_spinbox.configure(state='readonly')
 
 height_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=tkinter.RIGHT)
 height_spinbox.delete(0, "end")
 height_spinbox.insert(0, config.getint('settings', 'barcode_module_height'))
-height_spinbox.configure(state='readonly')
 
 border_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=tkinter.RIGHT)
 border_spinbox.delete(0, "end")
 border_spinbox.insert(0, config.getint('settings', 'barcode_border'))
-border_spinbox.configure(state='readonly')
 
 font_size_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=tkinter.RIGHT)
 font_size_spinbox.delete(0, "end")
 font_size_spinbox.insert(0, config.getint('settings', 'barcode_font_size'))
-font_size_spinbox.configure(state='readonly')
 
 input_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
 input_column_spinbox.delete(0, "end")
 input_column_spinbox.insert(0, config.get('settings', 'input_data_column'))
-input_column_spinbox.configure(state='readonly')
 
 output_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
 output_column_spinbox.delete(0, "end")
 output_column_spinbox.insert(0, config.get('settings', 'barcode_output_column'))
-output_column_spinbox.configure(state='readonly')
+
+set_spinbutton_state_read_only()
 
 old_workbook_selection_button = tkinter.ttk.Button(master=old_workbook_file_frame, text="Select Original Workbook",
                                                    command=lambda: select_folder_old_new_wrapper("old"))
@@ -475,34 +497,34 @@ new_workbook_label = tkinter.ttk.Label(master=new_workbook_file_frame, text="No 
 old_workbook_label.pack(anchor='w', padx=(1, 0))
 new_workbook_label.pack(anchor='w', padx=(1, 0))
 
+# create spinbox labels
 size_spinbox_dpi_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode DPI:", anchor=tkinter.E)
-size_spinbox_dpi_label.grid(row=0, column=0, sticky=tkinter.W + tkinter.E, pady=2)
-size_spinbox_dpi_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-
 size_spinbox_height_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Height:", anchor=tkinter.E)
-size_spinbox_height_label.grid(row=1, column=0, sticky=tkinter.W + tkinter.E, pady=2)
-size_spinbox_height_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-
 border_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Border:", anchor=tkinter.E)
-border_spinbox_label.grid(row=2, column=0, sticky=tkinter.W + tkinter.E, pady=2)
-border_spinbox_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-
 font_size_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Text Size:", anchor=tkinter.E)
-font_size_spinbox_label.grid(row=0, column=2, sticky=tkinter.W + tkinter.E, pady=2)
-font_size_spinbox_label.columnconfigure(0, weight=1)
-
 input_column_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Input Column:", anchor=tkinter.E)
-input_column_spinbox_label.grid(row=1, column=2, sticky=tkinter.W + tkinter.E, pady=2)
-input_column_spinbox_label.columnconfigure(0, weight=1)
-
 output_column_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Output Column:", anchor=tkinter.E)
+
+# insert spinbox labels into frame with grid packer
+size_spinbox_dpi_label.grid(row=0, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+size_spinbox_height_label.grid(row=1, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+border_spinbox_label.grid(row=2, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+font_size_spinbox_label.grid(row=0, column=2, sticky=tkinter.W + tkinter.E, pady=2)
+input_column_spinbox_label.grid(row=1, column=2, sticky=tkinter.W + tkinter.E, pady=2)
 output_column_spinbox_label.grid(row=2, column=2, sticky=tkinter.W + tkinter.E, pady=2)
+
+# set labels as stretchable
+size_spinbox_dpi_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
+size_spinbox_height_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
+border_spinbox_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
+font_size_spinbox_label.columnconfigure(0, weight=1)
+input_column_spinbox_label.columnconfigure(0, weight=1)
 output_column_spinbox_label.columnconfigure(0, weight=1)
 
+# insert spinboxes into frame with grid packer
 dpi_spinbox.grid(row=0, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
 height_spinbox.grid(row=1, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
 border_spinbox.grid(row=2, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
-
 font_size_spinbox.grid(row=0, column=3, sticky=tkinter.E, pady=2)
 input_column_spinbox.grid(row=1, column=3, sticky=tkinter.E, pady=2)
 output_column_spinbox.grid(row=2, column=3, sticky=tkinter.E, pady=2)
@@ -519,7 +541,7 @@ progress_bar.pack(side=tkinter.RIGHT)
 progress_numbers = tkinter.ttk.Label(master=progress_bar_frame)
 progress_numbers.pack(side=tkinter.LEFT)
 
-if flags_count != 0:
+if flags_count != 0:  # only show flags header when there is something to display
     tkinter.ttk.Label(root_window, text=flags_list_string).grid(row=0, column=0, columnspan=2)
 old_workbook_file_frame.pack(anchor='w', pady=2)
 new_workbook_file_frame.pack(anchor='w', pady=(3, 2))
