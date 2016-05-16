@@ -25,7 +25,7 @@ import tendo.singleton
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.2.5'
+version = '1.2.6'
 
 appname = "Barcode Insert Utility"
 
@@ -396,26 +396,32 @@ size_spinbox_frame = tkinter.ttk.Frame(root_window, relief=tkinter.GROOVE, borde
 dpi_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=tkinter.RIGHT)
 dpi_spinbox.delete(0, "end")
 dpi_spinbox.insert(0, config.getint('settings', 'barcode_dpi'))
+dpi_spinbox.configure(state='readonly')
 
 height_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=tkinter.RIGHT)
 height_spinbox.delete(0, "end")
 height_spinbox.insert(0, config.getint('settings', 'barcode_module_height'))
+height_spinbox.configure(state='readonly')
 
 border_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=tkinter.RIGHT)
 border_spinbox.delete(0, "end")
 border_spinbox.insert(0, config.getint('settings', 'barcode_border'))
+border_spinbox.configure(state='readonly')
 
 font_size_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=tkinter.RIGHT)
 font_size_spinbox.delete(0, "end")
 font_size_spinbox.insert(0, config.getint('settings', 'barcode_font_size'))
+font_size_spinbox.configure(state='readonly')
 
 input_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
 input_column_spinbox.delete(0, "end")
 input_column_spinbox.insert(0, config.get('settings', 'input_data_column'))
+input_column_spinbox.configure(state='readonly')
 
 output_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
 output_column_spinbox.delete(0, "end")
 output_column_spinbox.insert(0, config.get('settings', 'barcode_output_column'))
+output_column_spinbox.configure(state='readonly')
 
 old_workbook_selection_button = tkinter.ttk.Button(master=old_workbook_file_frame, text="Select Original Workbook",
                                                    command=lambda: select_folder_old_new_wrapper("old"))
