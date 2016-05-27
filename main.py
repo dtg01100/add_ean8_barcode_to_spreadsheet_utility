@@ -22,10 +22,11 @@ import os
 import configparser
 import appdirs
 import tendo.singleton
+import re
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.3.1'
+version = '1.4.0'
 
 appname = "Barcode Insert Utility"
 
@@ -64,6 +65,8 @@ if not os.path.exists(settings_file_path):
     config.set('settings', 'barcode_font_size', '6')
     config.set('settings', 'input_data_column', 'B')
     config.set('settings', 'barcode_output_column', 'A')
+    config.set('settings', 'barcode type', 'code39')
+    config.set('settings', 'pad ean barcodes', False)
     with open(settings_file_path, 'w') as configfile:
         config.write(configfile)
 
@@ -118,11 +121,15 @@ while column_count < 200:
     column_letter_list.append(column_letter)
 column_letter_tuple = tuple(column_letter_list)
 
+barcode_type_variable = tkinter.StringVar()
+pad_ean_option = tkinter.BooleanVar()
+
 
 def invalid_configuration_error():
     tkinter.messagebox.showerror(
         message="Configuration file is broken, relaunch program with the option '--reset_configuration'")
     raise SystemExit
+
 
 # set initial variables for configuration file test
 barcode_dpi_test = None
@@ -140,6 +147,12 @@ try:
     barcode_border_test = config.getint('settings', 'barcode_border')
     barcode_font_size_test = config.getint('settings', 'barcode_font_size')
 except ValueError:
+    invalid_configuration_error()
+
+try:
+    _ = config.get('settings', 'barcode type')
+    _ = config.getboolean('settings', 'pad ean barcodes')
+except (configparser.NoOptionError, ValueError):
     invalid_configuration_error()
 
 # check that values are in acceptable ranges
@@ -291,22 +304,39 @@ def do_process_workbook():
             progress_bar.configure(value=count)
             # get code from column "B", on current row, add a zero to the end to make seven digits
             print_if_debug("getting cell contents on line number " + str(count))
-            upc_barcode_number = str(ws[input_column_spinbox.get() + str(count)].value)
-            print_if_debug("cell contents are: " + upc_barcode_number)
-            try:
-                _ = int(upc_barcode_number)  # check that "upc_barcode_number" can be cast to int
-            except ValueError:
-                raise ValueError("Cell contents are not an integer, skipping")
+            upc_barcode_string = str(ws[input_column_spinbox.get() + str(count)].value)
+            print_if_debug("cell contents are: " + upc_barcode_string)
+            if barcode_type_variable.get() == "ean13" or barcode_type_variable.get() == "ean8":
+                try:
+                    _ = int(upc_barcode_string)  # check that "upc_barcode_string" can be cast to int
+                except ValueError:
+                    raise ValueError("Cell contents are not an integer, skipping")
             # select barcode type, specify barcode, and select image writer to save as png
-            if len(upc_barcode_number) == 6:
-                print_if_debug("detected 6 digit number. adding trailing zero and creating ean8 barcode")
-                upc_barcode_number += "0"
-                ean = barcode.get('ean8', upc_barcode_number, writer=ImageWriter())
-            elif len(upc_barcode_number) == 12:
-                print_if_debug("detected 12 digit number, creating ean13 barcode")
-                ean = barcode.get('ean13', upc_barcode_number, writer=ImageWriter())
-            else:
-                raise ValueError("cell doesn't contain a 6 or 12 digit number, skipping row")
+            if barcode_type_variable.get() == "ean8":
+                if pad_ean_option.get() is True:
+                    if len(upc_barcode_string) <= 7:
+                        upc_barcode_string = upc_barcode_string.ljust(7, '0')
+                    else:
+                        raise ValueError("Cell contents are more than 7 characters, skipping row")
+                else:
+                    if len(upc_barcode_string) != 7:
+                        raise ValueError("Cell contents are not 7 characters, skipping row")
+            elif barcode_type_variable.get() == "ean13":
+                if pad_ean_option.get() is True:
+                    if len(upc_barcode_string) <= 12:
+                        upc_barcode_string = upc_barcode_string.ljust(12, '0')
+                    else:
+                        raise ValueError("Cell contents are more than 12 characters, skipping row")
+                else:
+                    if len(upc_barcode_string) != 12:
+                        raise ValueError("Cell contents are not 12 characters, skipping row")
+            elif barcode_type_variable.get() == "code39":
+                if upc_barcode_string == '':
+                    raise ValueError("Cell is empty, skipping row")
+                upc_barcode_string = upc_barcode_string.upper()
+                upc_barcode_string = re.sub('[^A-Z0-9./*$%+\- ]+', ' ', upc_barcode_string)
+
+            ean = barcode.get(barcode_type_variable.get(), upc_barcode_string, writer=ImageWriter())
             # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
             # dpi is the conversion from svg image size in mm, to what the image writer thinks is inches.
             ean.default_writer_options['dpi'] = int(dpi_spinbox.get())
@@ -414,6 +444,8 @@ def process_workbook_command_wrapper():
     config.set('settings', 'barcode_font_size', font_size_spinbox.get())
     config.set('settings', 'input_data_column', input_column_spinbox.get())
     config.set('settings', 'barcode_output_column', output_column_spinbox.get())
+    config.set('settings', 'barcode type', barcode_type_variable.get())
+    config.set('settings', 'pad ean barcodes', pad_ean_option.get())
     with open(settings_file_path, 'w') as configfile_before_processing:
         config.write(configfile_before_processing)
     for child in size_spinbox_frame.winfo_children():
@@ -457,6 +489,14 @@ def set_spinbutton_state_read_only():
     input_column_spinbox.configure(state='readonly')
     output_column_spinbox.configure(state='readonly')
 
+
+barcode_type_menu = tkinter.ttk.OptionMenu(size_spinbox_frame, barcode_type_variable,
+                                           config.get('settings', 'barcode type'), 'code39', 'ean8', 'ean13')
+
+pad_ean_checkbutton = tkinter.ttk.Checkbutton(size_spinbox_frame, text="Pad EAN Barcodes", variable=pad_ean_option,
+                                              onvalue=True, offvalue=False)
+pad_ean_option.set(config.getboolean('settings', 'pad ean barcodes'))
+
 dpi_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=tkinter.RIGHT)
 dpi_spinbox.delete(0, "end")
 dpi_spinbox.insert(0, config.getint('settings', 'barcode_dpi'))
@@ -498,6 +538,7 @@ old_workbook_label.pack(anchor='w', padx=(1, 0))
 new_workbook_label.pack(anchor='w', padx=(1, 0))
 
 # create spinbox labels
+barcode_type_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Type:", anchor=tkinter.E)
 size_spinbox_dpi_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode DPI:", anchor=tkinter.E)
 size_spinbox_height_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Height:", anchor=tkinter.E)
 border_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Barcode Border:", anchor=tkinter.E)
@@ -506,28 +547,32 @@ input_column_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="
 output_column_spinbox_label = tkinter.ttk.Label(master=size_spinbox_frame, text="Output Column:", anchor=tkinter.E)
 
 # insert spinbox labels into frame with grid packer
-size_spinbox_dpi_label.grid(row=0, column=0, sticky=tkinter.W + tkinter.E, pady=2)
-size_spinbox_height_label.grid(row=1, column=0, sticky=tkinter.W + tkinter.E, pady=2)
-border_spinbox_label.grid(row=2, column=0, sticky=tkinter.W + tkinter.E, pady=2)
-font_size_spinbox_label.grid(row=0, column=2, sticky=tkinter.W + tkinter.E, pady=2)
-input_column_spinbox_label.grid(row=1, column=2, sticky=tkinter.W + tkinter.E, pady=2)
-output_column_spinbox_label.grid(row=2, column=2, sticky=tkinter.W + tkinter.E, pady=2)
+barcode_type_label.grid(row=0, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+size_spinbox_dpi_label.grid(row=1, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+size_spinbox_height_label.grid(row=2, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+border_spinbox_label.grid(row=3, column=0, sticky=tkinter.W + tkinter.E, pady=2)
+font_size_spinbox_label.grid(row=1, column=2, sticky=tkinter.W + tkinter.E, pady=2)
+input_column_spinbox_label.grid(row=2, column=2, sticky=tkinter.W + tkinter.E, pady=2)
+output_column_spinbox_label.grid(row=3, column=2, sticky=tkinter.W + tkinter.E, pady=2)
 
 # set labels as stretchable
-size_spinbox_dpi_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-size_spinbox_height_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
-border_spinbox_label.columnconfigure(0, weight=1)  # make this stretch to fill available space
+barcode_type_label.columnconfigure(0, weight=1)
+size_spinbox_dpi_label.columnconfigure(0, weight=1)
+size_spinbox_height_label.columnconfigure(0, weight=1)
+border_spinbox_label.columnconfigure(0, weight=1)
 font_size_spinbox_label.columnconfigure(0, weight=1)
 input_column_spinbox_label.columnconfigure(0, weight=1)
 output_column_spinbox_label.columnconfigure(0, weight=1)
 
 # insert spinboxes into frame with grid packer
-dpi_spinbox.grid(row=0, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
-height_spinbox.grid(row=1, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
-border_spinbox.grid(row=2, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
-font_size_spinbox.grid(row=0, column=3, sticky=tkinter.E, pady=2)
-input_column_spinbox.grid(row=1, column=3, sticky=tkinter.E, pady=2)
-output_column_spinbox.grid(row=2, column=3, sticky=tkinter.E, pady=2)
+barcode_type_menu.grid(row=0, column=1)
+dpi_spinbox.grid(row=1, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
+height_spinbox.grid(row=2, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
+border_spinbox.grid(row=3, column=1, sticky=tkinter.E, pady=2, padx=(0, 2))
+pad_ean_checkbutton.grid(row=0, column=2, columnspan=2, sticky=tkinter.E)
+font_size_spinbox.grid(row=1, column=3, sticky=tkinter.E, pady=2)
+input_column_spinbox.grid(row=2, column=3, sticky=tkinter.E, pady=2)
+output_column_spinbox.grid(row=3, column=3, sticky=tkinter.E, pady=2)
 
 process_workbook_button = tkinter.ttk.Button(master=go_button_frame, text="Select Workbooks",
                                              command=process_workbook_command_wrapper)
