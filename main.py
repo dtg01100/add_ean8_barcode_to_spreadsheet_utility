@@ -237,7 +237,7 @@ def select_folder_old_new_wrapper(selection):
             filetypes=[("Excel Spreadsheet", "*.xlsx")])
         file_is_xlsx = False
         if os.path.exists(old_workbook_path_proposed):
-            config.set('settings', 'initial_input_folder', os.path.dirname(old_workbook_path))
+            config.set('settings', 'initial_input_folder', os.path.dirname(old_workbook_path_proposed))
             with open(settings_file_path, 'w') as configuration_file:
                 config.write(configuration_file)
             try:
