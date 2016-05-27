@@ -26,7 +26,7 @@ import re
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.4.0'
+version = '1.4.1'
 
 appname = "Barcode Insert Utility"
 
