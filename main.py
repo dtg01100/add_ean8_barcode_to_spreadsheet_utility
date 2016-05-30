@@ -126,8 +126,10 @@ pad_ean_option = tkinter.BooleanVar()
 
 
 def invalid_configuration_error():
-    tkinter.messagebox.showerror(
-        message="Configuration file is broken, relaunch program with the option '--reset_configuration'")
+    root_window.withdraw()
+    tkinter.messagebox.showerror(title="Batch File Sender Version " + version,
+                                 message="Configuration file is broken, "
+                                         "relaunch program with the option '--reset_configuration'")
     raise SystemExit
 
 
