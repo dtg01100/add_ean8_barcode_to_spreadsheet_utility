@@ -26,7 +26,7 @@ import re
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.4.2'
+version = '1.4.3'
 
 appname = "Barcode Insert Utility"
 
@@ -313,35 +313,36 @@ def do_process_workbook():
             print_if_debug("getting cell contents on line number " + str(count))
             upc_barcode_string = str(ws[input_column_spinbox.get() + str(count)].value)
             print_if_debug("cell contents are: " + upc_barcode_string)
-            if barcode_type_variable.get() == "ean13" or barcode_type_variable.get() == "ean8":
-                try:
-                    _ = int(upc_barcode_string)  # check that "upc_barcode_string" can be cast to int
-                except ValueError:
-                    raise ValueError("Cell contents are not an integer, skipping")
-            # select barcode type, specify barcode, and select image writer to save as png
-            if barcode_type_variable.get() == "ean8":
-                if pad_ean_option.get() is True:
-                    if len(upc_barcode_string) <= 7:
-                        upc_barcode_string = upc_barcode_string.ljust(7, '0')
+            if not upc_barcode_string == '':
+                if barcode_type_variable.get() == "ean13" or barcode_type_variable.get() == "ean8":
+                    try:
+                        _ = int(upc_barcode_string)  # check that "upc_barcode_string" can be cast to int
+                    except ValueError:
+                        raise ValueError("Cell contents are not an integer, skipping")
+                # select barcode type, specify barcode, and select image writer to save as png
+                if barcode_type_variable.get() == "ean8":
+                    if pad_ean_option.get() is True:
+                        if len(upc_barcode_string) <= 7:
+                            upc_barcode_string = upc_barcode_string.ljust(7, '0')
+                        else:
+                            raise ValueError("Cell contents are more than 7 characters, skipping row")
                     else:
-                        raise ValueError("Cell contents are more than 7 characters, skipping row")
-                else:
-                    if len(upc_barcode_string) != 7:
-                        raise ValueError("Cell contents are not 7 characters, skipping row")
-            elif barcode_type_variable.get() == "ean13":
-                if pad_ean_option.get() is True:
-                    if len(upc_barcode_string) <= 12:
-                        upc_barcode_string = upc_barcode_string.ljust(12, '0')
+                        if len(upc_barcode_string) != 7:
+                            raise ValueError("Cell contents are not 7 characters, skipping row")
+                elif barcode_type_variable.get() == "ean13":
+                    if pad_ean_option.get() is True:
+                        if len(upc_barcode_string) <= 12:
+                            upc_barcode_string = upc_barcode_string.ljust(12, '0')
+                        else:
+                            raise ValueError("Cell contents are more than 12 characters, skipping row")
                     else:
-                        raise ValueError("Cell contents are more than 12 characters, skipping row")
-                else:
-                    if len(upc_barcode_string) != 12:
-                        raise ValueError("Cell contents are not 12 characters, skipping row")
-            elif barcode_type_variable.get() == "code39":
-                if upc_barcode_string == '':
-                    raise ValueError("Cell is empty, skipping row")
-                upc_barcode_string = upc_barcode_string.upper()
-                upc_barcode_string = re.sub('[^A-Z0-9./*$%+\- ]+', ' ', upc_barcode_string)
+                        if len(upc_barcode_string) != 12:
+                            raise ValueError("Cell contents are not 12 characters, skipping row")
+                elif barcode_type_variable.get() == "code39":
+                    upc_barcode_string = upc_barcode_string.upper()
+                    upc_barcode_string = re.sub('[^A-Z0-9./*$%+\- ]+', ' ', upc_barcode_string)
+            else:
+                raise ValueError("Cell is empty, skipping row")
 
             ean = barcode.get(barcode_type_variable.get(), upc_barcode_string, writer=ImageWriter())
             # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
