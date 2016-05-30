@@ -26,9 +26,11 @@ import re
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.4.1'
+version = '1.4.2'
 
 appname = "Barcode Insert Utility"
+
+supported_barcode_types = ['code39', 'ean8', 'ean13']
 
 config_folder = appdirs.user_data_dir(appname)
 try:
@@ -138,6 +140,7 @@ barcode_dpi_test = None
 barcode_module_height_test = None
 barcode_border_test = None
 barcode_font_size_test = None
+barcode_type_test = None
 invalid_configuration = False
 input_barcode_test_column = config.get('settings', 'input_data_column')
 output_barcode_test_column = config.get('settings', 'barcode_output_column')
@@ -152,7 +155,7 @@ except ValueError:
     invalid_configuration_error()
 
 try:
-    _ = config.get('settings', 'barcode type')
+    barcode_type_test = config.get('settings', 'barcode type')
     _ = config.getboolean('settings', 'pad ean barcodes')
 except (configparser.NoOptionError, ValueError):
     invalid_configuration_error()
@@ -167,6 +170,8 @@ if barcode_module_height_test not in range(5, 50):
 if barcode_border_test not in range(0, 25):
     invalid_configuration = True
 if barcode_font_size_test not in range(0, 15):
+    invalid_configuration = True
+if barcode_type_test not in supported_barcode_types:
     invalid_configuration = True
 if invalid_configuration:  # if any of the previous values are incorrect, show an error dialog and close out
     invalid_configuration_error()
@@ -493,7 +498,7 @@ def set_spinbutton_state_read_only():
 
 
 barcode_type_menu = tkinter.ttk.OptionMenu(size_spinbox_frame, barcode_type_variable,
-                                           config.get('settings', 'barcode type'), 'code39', 'ean8', 'ean13')
+                                           config.get('settings', 'barcode type'), *supported_barcode_types)
 
 pad_ean_checkbutton = tkinter.ttk.Checkbutton(size_spinbox_frame, text="Pad EAN Barcodes", variable=pad_ean_option,
                                               onvalue=True, offvalue=False)
