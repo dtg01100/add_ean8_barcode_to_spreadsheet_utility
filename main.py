@@ -26,7 +26,7 @@ import re
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.4.3'
+version = '1.4.4'
 
 appname = "Barcode Insert Utility"
 
@@ -142,8 +142,8 @@ barcode_border_test = None
 barcode_font_size_test = None
 barcode_type_test = None
 invalid_configuration = False
-input_barcode_test_column = config.get('settings', 'input_data_column')
-output_barcode_test_column = config.get('settings', 'barcode_output_column')
+input_barcode_test_column = None
+output_barcode_test_column = None
 
 # check to see if the following four are integers
 try:
@@ -155,6 +155,8 @@ except ValueError:
     invalid_configuration_error()
 
 try:
+    input_barcode_test_column = config.get('settings', 'input_data_column')
+    output_barcode_test_column = config.get('settings', 'barcode_output_column')
     barcode_type_test = config.get('settings', 'barcode type')
     _ = config.getboolean('settings', 'pad ean barcodes')
 except (configparser.NoOptionError, ValueError):
