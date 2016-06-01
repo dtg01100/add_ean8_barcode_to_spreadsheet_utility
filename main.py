@@ -272,7 +272,8 @@ def select_folder_old_new_wrapper(selection):
                 config.set('settings', 'initial_output_folder', os.path.dirname(new_workbook_path))
                 with open(settings_file_path, 'w') as configuration_file:
                     config.write(configuration_file)
-                new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
+                new_workbook_path_wrapped = '\n'.join(
+                    textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
                 new_workbook_label.configure(text=new_workbook_path_wrapped, justify=tkinter.LEFT,
                                              background=old_workbook_label._root().cget('background'))
         except AttributeError:
