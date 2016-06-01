@@ -26,7 +26,7 @@ import re
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.4.4'
+version = '1.4.5'
 
 appname = "Barcode Insert Utility"
 
@@ -245,15 +245,18 @@ def select_folder_old_new_wrapper(selection):
             initialdir=config.get('settings', 'initial_input_folder'),
             filetypes=[("Excel Spreadsheet", "*.xlsx")])
         file_is_xlsx = False
-        if os.path.exists(old_workbook_path_proposed):
-            config.set('settings', 'initial_input_folder', os.path.dirname(old_workbook_path_proposed))
-            with open(settings_file_path, 'w') as configuration_file:
-                config.write(configuration_file)
-            try:
-                openpyxl.load_workbook(old_workbook_path_proposed, read_only=True)
-                file_is_xlsx = True
-            except Exception as file_test_open_error:
-                print(file_test_open_error)
+        try:
+            if os.path.exists(old_workbook_path_proposed):
+                config.set('settings', 'initial_input_folder', os.path.dirname(old_workbook_path_proposed))
+                with open(settings_file_path, 'w') as configuration_file:
+                    config.write(configuration_file)
+                try:
+                    openpyxl.load_workbook(old_workbook_path_proposed, read_only=True)
+                    file_is_xlsx = True
+                except Exception as file_test_open_error:
+                    print(file_test_open_error)
+        except TypeError:
+            old_workbook_path_proposed = ''
         if os.path.exists(old_workbook_path_proposed) and file_is_xlsx is True:
             old_workbook_path = old_workbook_path_proposed
             old_workbook_path_wrapped = '\n'.join(textwrap.wrap(old_workbook_path, width=75, replace_whitespace=False))
@@ -263,14 +266,17 @@ def select_folder_old_new_wrapper(selection):
             initialdir=config.get('settings', 'initial_output_folder'),
             defaultextension='.xlsx',
             filetypes=[("Excel Spreadsheet", "*.xlsx")])
-        if os.path.exists(os.path.dirname(new_workbook_path_proposed)):
-            new_workbook_path = new_workbook_path_proposed
-            config.set('settings', 'initial_output_folder', os.path.dirname(new_workbook_path))
-            with open(settings_file_path, 'w') as configuration_file:
-                config.write(configuration_file)
-            new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
-            new_workbook_label.configure(text=new_workbook_path_wrapped, justify=tkinter.LEFT,
-                                         background=old_workbook_label._root().cget('background'))
+        try:
+            if os.path.exists(os.path.dirname(new_workbook_path_proposed)):
+                new_workbook_path = new_workbook_path_proposed
+                config.set('settings', 'initial_output_folder', os.path.dirname(new_workbook_path))
+                with open(settings_file_path, 'w') as configuration_file:
+                    config.write(configuration_file)
+                new_workbook_path_wrapped = '\n'.join(textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
+                new_workbook_label.configure(text=new_workbook_path_wrapped, justify=tkinter.LEFT,
+                                             background=old_workbook_label._root().cget('background'))
+        except AttributeError:
+            new_workbook_path = ''
     if os.path.exists(old_workbook_path) and os.path.exists(os.path.dirname(new_workbook_path)):
         process_workbook_button.configure(state=tkinter.NORMAL, text="Process Workbook")
     for child in size_spinbox_frame.winfo_children():
