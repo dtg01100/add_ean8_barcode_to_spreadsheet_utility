@@ -26,7 +26,7 @@ import re
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.4.5'
+version = '1.4.6'
 
 appname = "Barcode Insert Utility"
 
@@ -264,6 +264,7 @@ def select_folder_old_new_wrapper(selection):
     else:
         new_workbook_path_proposed = tkinter.filedialog.asksaveasfilename(
             initialdir=config.get('settings', 'initial_output_folder'),
+            initialfile=os.path.basename(old_workbook_path),
             defaultextension='.xlsx',
             filetypes=[("Excel Spreadsheet", "*.xlsx")])
         try:
