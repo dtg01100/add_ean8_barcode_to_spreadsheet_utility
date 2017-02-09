@@ -23,10 +23,14 @@ import configparser
 import appdirs
 import tendo.singleton
 import re
+import io
+import barcode.pybarcode
+from contextlib import redirect_stdout
+
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.4.6'
+version = '1.5.0'
 
 appname = "Barcode Insert Utility"
 
@@ -43,7 +47,7 @@ settings_file_path = os.path.join(config_folder, 'barcode insert utility setting
 launch_options = argparse.ArgumentParser()
 launch_options.add_argument('-d', '--debug', action='store_true', help="print debug output to stdout")
 launch_options.add_argument('-l', '--log', action='store_true', help="write stdout to log file")
-launch_options.add_argument('--keep_barcodes_in_home', action='store_true',
+launch_options.add_argument('--keep_barcodes_in_cwd', action='store_true',
                             help="temp folder in working directory")
 launch_options.add_argument('--keep_barcode_files', action='store_true', help="don't delete temp files")
 launch_options.add_argument('--reset_configuration', action='store_true', help="remove configuration file")
@@ -87,7 +91,7 @@ if args.debug:
 if args.log:
     flags_list_string += "(Logged)"
     flags_count += 1
-if args.keep_barcodes_in_home:
+if args.keep_barcodes_in_cwd:
     flags_list_string += "(Barcodes In Working Directory)"
     flags_count += 1
 if args.keep_barcode_files:
@@ -229,6 +233,11 @@ print_if_debug("Barcode Insert Utility version " + version)
 
 print_if_debug("File limit is: " + str(file_limit))
 
+# get supported formats from pybarcode, in case debugging is required
+with io.StringIO() as buf, redirect_stdout(buf):
+    barcode.pybarcode.list_types(ImageWriter)
+    output = buf.getvalue()
+print_if_debug(output)
 
 # this is the workbook selector, the code was a bit of an experiment and is a bit of a pain to debug.
 # not enough of the logic is shared between the two codepaths to make it worth the complexity
@@ -319,7 +328,8 @@ def do_process_workbook():
             progress_bar.configure(maximum=ws.max_row, value=count, mode='determinate')
             progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
             progress_bar.configure(value=count)
-            # get code from column "B", on current row, add a zero to the end to make seven digits
+            # get code from column selected in input_colum_spinbox, on current row,
+            # add a zeroes to the end if option is selected to make seven or 12 digits
             print_if_debug("getting cell contents on line number " + str(count))
             upc_barcode_string = str(ws[input_column_spinbox.get() + str(count)].value)
             print_if_debug("cell contents are: " + upc_barcode_string)
