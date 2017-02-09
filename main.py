@@ -30,7 +30,7 @@ from contextlib import redirect_stdout
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.5.0'
+version = '1.5.1'
 
 appname = "Barcode Insert Utility"
 
@@ -239,6 +239,7 @@ with io.StringIO() as buf, redirect_stdout(buf):
     output = buf.getvalue()
 print_if_debug(output)
 
+
 # this is the workbook selector, the code was a bit of an experiment and is a bit of a pain to debug.
 # not enough of the logic is shared between the two codepaths to make it worth the complexity
 # ill probably rewrite this at some point.
@@ -300,7 +301,7 @@ def select_folder_old_new_wrapper(selection):
 def do_process_workbook():
     # this is called as a background thread to ensure the interface is responsive
     print_if_debug("creating temp directory")
-    if not args.keep_barcodes_in_home:
+    if not args.keep_barcodes_in_cwd:
         tempdir = tempfile.mkdtemp()
     else:
         temp_dir_in_cwd = os.path.join(program_launch_cwd, 'barcode images')
