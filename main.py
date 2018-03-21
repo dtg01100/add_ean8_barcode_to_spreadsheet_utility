@@ -30,7 +30,7 @@ from contextlib import redirect_stdout
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.5.1'
+version = '1.5.2'
 
 appname = "Barcode Insert Utility"
 
@@ -343,6 +343,8 @@ def do_process_workbook():
                 # select barcode type, specify barcode, and select image writer to save as png
                 if barcode_type_variable.get() == "ean8":
                     if pad_ean_option.get() is True:
+                        if len(upc_barcode_string) < 6:
+                            upc_barcode_string = upc_barcode_string.rjust(6, '0')
                         if len(upc_barcode_string) <= 7:
                             upc_barcode_string = upc_barcode_string.ljust(7, '0')
                         else:
@@ -352,6 +354,8 @@ def do_process_workbook():
                             raise ValueError("Cell contents are not 7 characters, skipping row")
                 elif barcode_type_variable.get() == "ean13":
                     if pad_ean_option.get() is True:
+                        if len(upc_barcode_string) < 11:
+                            upc_barcode_string = upc_barcode_string.rjust(11, '0')
                         if len(upc_barcode_string) <= 12:
                             upc_barcode_string = upc_barcode_string.ljust(12, '0')
                         else:
