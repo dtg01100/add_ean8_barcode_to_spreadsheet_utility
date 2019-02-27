@@ -30,7 +30,7 @@ from contextlib import redirect_stdout
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.5.2'
+version = '1.5.3'
 
 appname = "Barcode Insert Utility"
 
@@ -406,9 +406,8 @@ def do_process_workbook():
                     print_if_debug("success")
                     # attach image to cell
                     print_if_debug("adding image to cell")
-                    img.anchor(ws.cell(output_column_spinbox.get() + str(count)), anchortype='oneCell')
                     # add image to cell
-                    ws.add_image(img)
+                    ws.add_image(img, anchor=output_column_spinbox.get() + str(count))
                     save_counter += 1
             print_if_debug("success")
         except Exception as barcode_error:
