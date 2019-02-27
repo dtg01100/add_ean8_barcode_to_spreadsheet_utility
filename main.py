@@ -4,6 +4,7 @@ import shutil
 import warnings
 import barcode
 import openpyxl
+import openpyxl.utils
 from openpyxl.drawing.image import Image as OpenPyXlImage
 from PIL import Image as pil_Image
 import ImageOps as pil_ImageOps
@@ -109,21 +110,11 @@ program_launch_cwd = os.getcwd()
 process_workbook_keep_alive = True
 
 
-#  credit for the col_to_excel goes to Nodebody on stackoverflow, at this link: http://stackoverflow.com/a/19154642
-def _col_to_excel(col):  # col is 1 based
-    excel_col = str()
-    div = col
-    while div:
-        (div, mod) = divmod(div - 1, 26)  # will return (x, 0 .. 25)
-        excel_col = chr(mod + 65) + excel_col
-    return excel_col
-
-
 column_letter_list = []
 column_count = 0
 while column_count < 200:
     column_count += 1
-    column_letter = _col_to_excel(column_count)
+    column_letter = openpyxl.utils.get_column_letter(column_count)
     column_letter_list.append(column_letter)
 column_letter_tuple = tuple(column_letter_list)
 
