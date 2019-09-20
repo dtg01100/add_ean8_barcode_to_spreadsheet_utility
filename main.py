@@ -31,7 +31,7 @@ from contextlib import redirect_stdout
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.6.0'
+version = '1.6.1'
 
 appname = "Barcode Insert Utility"
 
@@ -327,7 +327,7 @@ def interpret_barcode_string(upc_barcode_string):
             try:
                 _ = int(upc_barcode_string)  # check that "upc_barcode_string" can be cast to int
             except ValueError:
-                raise ValueError("Cell contents are not an integer, skipping")
+                raise ValueError("Input contents are not an integer")
         # select barcode type, specify barcode, and select image writer to save as png
         if barcode_type_variable.get() == "ean8":
             if pad_ean_option.get() is True:
@@ -336,10 +336,10 @@ def interpret_barcode_string(upc_barcode_string):
                 if len(upc_barcode_string) <= 7:
                     upc_barcode_string = upc_barcode_string.ljust(7, '0')
                 else:
-                    raise ValueError("Cell contents are more than 7 characters, skipping row")
+                    raise ValueError("Input contents are more than 7 characters")
             else:
                 if len(upc_barcode_string) != 7:
-                    raise ValueError("Cell contents are not 7 characters, skipping row")
+                    raise ValueError("Input contents are not 7 characters")
         elif barcode_type_variable.get() == "ean13":
             if pad_ean_option.get() is True:
                 if len(upc_barcode_string) < 11:
@@ -347,16 +347,16 @@ def interpret_barcode_string(upc_barcode_string):
                 if len(upc_barcode_string) <= 12:
                     upc_barcode_string = upc_barcode_string.ljust(12, '0')
                 else:
-                    raise ValueError("Cell contents are more than 12 characters, skipping row")
+                    raise ValueError("Input contents are more than 12 characters")
             else:
                 if len(upc_barcode_string) != 12:
-                    raise ValueError("Cell contents are not 12 characters, skipping row")
+                    raise ValueError("Input contents are not 12 characters")
         elif barcode_type_variable.get() == "code39":
             upc_barcode_string = upc_barcode_string.upper()
             upc_barcode_string = re.sub('[^A-Z0-9./*$%+\- ]+', ' ', upc_barcode_string)
         return upc_barcode_string
     else:
-        raise ValueError("Cell is empty")
+        raise ValueError("Input is empty")
 
 def do_process_workbook():
     # this is called as a background thread to ensure the interface is responsive
@@ -504,6 +504,9 @@ def process_workbook_command_wrapper():
 def generate_single_barcode():
     print("single barcode stub")
 
+    if upc_entry.get() == '':
+        return
+
     print_if_debug("creating temp directory")
     if not args.keep_barcodes_in_cwd:
         tempdir = tempfile.mkdtemp()
@@ -518,9 +521,12 @@ def generate_single_barcode():
         defaultextension='.png',
         filetypes=[("PNG Image File", "*.png")])
 
-    if os.path.exists(os.path.dirname(save_path)):
-        barcode_path, _, _ = generate_barcode(interpret_barcode_string(upc_entry.get()), tempdir)
-        shutil.copyfile(barcode_path, save_path)
+    try:
+        if os.path.exists(os.path.dirname(save_path)):
+            barcode_path, _, _ = generate_barcode(interpret_barcode_string(upc_entry.get()), tempdir)
+            shutil.copyfile(barcode_path, save_path)
+    except Exception as error:
+        tkinter.messagebox.showerror(master=root_window, message="Failed to generate barcode image: {}".format(str(error)))
 
     if not args.keep_barcode_files:
         print_if_debug("removing temp folder " + tempdir)
