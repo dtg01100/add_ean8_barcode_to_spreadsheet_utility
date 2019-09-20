@@ -289,6 +289,75 @@ def select_folder_old_new_wrapper(selection):
     old_workbook_selection_button.configure(state=tkinter.NORMAL)
 
 
+def generate_barcode(input_string, tempdir):
+    border_size = int(border_spinbox.get())
+    ean = barcode.get(barcode_type_variable.get(), input_string, writer=ImageWriter())
+    # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
+    # dpi is the conversion from svg image size in mm, to what the image writer thinks is inches.
+    ean.default_writer_options['dpi'] = int(dpi_spinbox.get())
+    # module height is the barcode bar height in mm
+    ean.default_writer_options['module_height'] = float(height_spinbox.get())
+    # text distance is the distance between the bottom of the barcode, and the top of the text in mm
+    ean.default_writer_options['text_distance'] = 1
+    # font size is the text size in pt
+    ean.default_writer_options['font_size'] = int(font_size_spinbox.get())
+    # quiet zone is the distance from the ends of the barcode to the ends of the image in mm
+    ean.default_writer_options['quiet_zone'] = 2
+    # save barcode image with generated filename
+    print_if_debug("generating barcode image")
+    with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as initial_temp_file_path:
+        filename = ean.save(initial_temp_file_path.name[0:-4])
+        print_if_debug("success, barcode image path is: " + filename)
+        print_if_debug("opening " + str(filename) + " to add border")
+        barcode_image = pil_Image.open(str(filename))  # open image as pil object
+        print_if_debug("success")
+        print_if_debug("adding barcode and saving")
+        img_save = pil_ImageOps.expand(barcode_image, border=border_size,
+                                        fill='white')  # add border around image
+        width, height = img_save.size  # get image size of barcode with border
+        # write out image to file
+        with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as final_barcode_path:
+            img_save.save(final_barcode_path.name)
+            print_if_debug("success, final barcode path is: " + final_barcode_path.name)
+    return final_barcode_path.name, width, height
+
+def interpret_barcode_string(upc_barcode_string):
+    if not upc_barcode_string == '':
+        if barcode_type_variable.get() == "ean13" or barcode_type_variable.get() == "ean8":
+            try:
+                _ = int(upc_barcode_string)  # check that "upc_barcode_string" can be cast to int
+            except ValueError:
+                raise ValueError("Cell contents are not an integer, skipping")
+        # select barcode type, specify barcode, and select image writer to save as png
+        if barcode_type_variable.get() == "ean8":
+            if pad_ean_option.get() is True:
+                if len(upc_barcode_string) < 6:
+                    upc_barcode_string = upc_barcode_string.rjust(6, '0')
+                if len(upc_barcode_string) <= 7:
+                    upc_barcode_string = upc_barcode_string.ljust(7, '0')
+                else:
+                    raise ValueError("Cell contents are more than 7 characters, skipping row")
+            else:
+                if len(upc_barcode_string) != 7:
+                    raise ValueError("Cell contents are not 7 characters, skipping row")
+        elif barcode_type_variable.get() == "ean13":
+            if pad_ean_option.get() is True:
+                if len(upc_barcode_string) < 11:
+                    upc_barcode_string = upc_barcode_string.rjust(11, '0')
+                if len(upc_barcode_string) <= 12:
+                    upc_barcode_string = upc_barcode_string.ljust(12, '0')
+                else:
+                    raise ValueError("Cell contents are more than 12 characters, skipping row")
+            else:
+                if len(upc_barcode_string) != 12:
+                    raise ValueError("Cell contents are not 12 characters, skipping row")
+        elif barcode_type_variable.get() == "code39":
+            upc_barcode_string = upc_barcode_string.upper()
+            upc_barcode_string = re.sub('[^A-Z0-9./*$%+\- ]+', ' ', upc_barcode_string)
+        return upc_barcode_string
+    else:
+        raise ValueError("Cell is empty")
+
 def do_process_workbook():
     # this is called as a background thread to ensure the interface is responsive
     print_if_debug("creating temp directory")
@@ -310,41 +379,6 @@ def do_process_workbook():
     save_counter = 0
     progress_bar.configure(maximum=ws.max_row, value=count)
     progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
-    border_size = int(border_spinbox.get())
-
-    def generate_barcode(input_string):
-        ean = barcode.get(barcode_type_variable.get(), input_string, writer=ImageWriter())
-        # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
-        # dpi is the conversion from svg image size in mm, to what the image writer thinks is inches.
-        ean.default_writer_options['dpi'] = int(dpi_spinbox.get())
-        # module height is the barcode bar height in mm
-        ean.default_writer_options['module_height'] = float(height_spinbox.get())
-        # text distance is the distance between the bottom of the barcode, and the top of the text in mm
-        ean.default_writer_options['text_distance'] = 1
-        # font size is the text size in pt
-        ean.default_writer_options['font_size'] = int(font_size_spinbox.get())
-        # quiet zone is the distance from the ends of the barcode to the ends of the image in mm
-        ean.default_writer_options['quiet_zone'] = 2
-        # save barcode image with generated filename
-        print_if_debug("generating barcode image")
-        with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as initial_temp_file_path:
-            filename = ean.save(initial_temp_file_path.name[0:-4])
-            print_if_debug("success, barcode image path is: " + filename)
-            print_if_debug("opening " + str(filename) + " to add border")
-            barcode_image = pil_Image.open(str(filename))  # open image as pil object
-            print_if_debug("success")
-            print_if_debug("adding barcode and saving")
-            img_save = pil_ImageOps.expand(barcode_image, border=border_size,
-                                            fill='white')  # add border around image
-            width, height = img_save.size  # get image size of barcode with border
-            # resize cell to size of image
-            ws.column_dimensions[output_column_spinbox.get()].width = int(math.ceil(float(width) * .15))
-            ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
-            # write out image to file
-            with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as final_barcode_path:
-                img_save.save(final_barcode_path.name)
-                print_if_debug("success, final barcode path is: " + final_barcode_path.name)
-        return final_barcode_path.name
 
     for _ in ws.iter_rows():  # iterate over all rows in current worksheet
         if not process_workbook_keep_alive:
@@ -359,42 +393,12 @@ def do_process_workbook():
             print_if_debug("getting cell contents on line number " + str(count))
             upc_barcode_string = str(ws[input_column_spinbox.get() + str(count)].value)
             print_if_debug("cell contents are: " + upc_barcode_string)
-            if not upc_barcode_string == '':
-                if barcode_type_variable.get() == "ean13" or barcode_type_variable.get() == "ean8":
-                    try:
-                        _ = int(upc_barcode_string)  # check that "upc_barcode_string" can be cast to int
-                    except ValueError:
-                        raise ValueError("Cell contents are not an integer, skipping")
-                # select barcode type, specify barcode, and select image writer to save as png
-                if barcode_type_variable.get() == "ean8":
-                    if pad_ean_option.get() is True:
-                        if len(upc_barcode_string) < 6:
-                            upc_barcode_string = upc_barcode_string.rjust(6, '0')
-                        if len(upc_barcode_string) <= 7:
-                            upc_barcode_string = upc_barcode_string.ljust(7, '0')
-                        else:
-                            raise ValueError("Cell contents are more than 7 characters, skipping row")
-                    else:
-                        if len(upc_barcode_string) != 7:
-                            raise ValueError("Cell contents are not 7 characters, skipping row")
-                elif barcode_type_variable.get() == "ean13":
-                    if pad_ean_option.get() is True:
-                        if len(upc_barcode_string) < 11:
-                            upc_barcode_string = upc_barcode_string.rjust(11, '0')
-                        if len(upc_barcode_string) <= 12:
-                            upc_barcode_string = upc_barcode_string.ljust(12, '0')
-                        else:
-                            raise ValueError("Cell contents are more than 12 characters, skipping row")
-                    else:
-                        if len(upc_barcode_string) != 12:
-                            raise ValueError("Cell contents are not 12 characters, skipping row")
-                elif barcode_type_variable.get() == "code39":
-                    upc_barcode_string = upc_barcode_string.upper()
-                    upc_barcode_string = re.sub('[^A-Z0-9./*$%+\- ]+', ' ', upc_barcode_string)
-            else:
-                raise ValueError("Cell is empty, skipping row")
+            upc_barcode_string = interpret_barcode_string(upc_barcode_string)
+            generated_barcode_path, width, height = generate_barcode(upc_barcode_string, tempdir)
+            # resize cell to size of image
+            ws.column_dimensions[output_column_spinbox.get()].width = int(math.ceil(float(width) * .15))
+            ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
 
-            generated_barcode_path = generate_barcode(upc_barcode_string)
             # open image with as openpyxl image object
             print_if_debug("opening " + generated_barcode_path + " to insert into output spreadsheet")
             img = OpenPyXlImage(generated_barcode_path)
@@ -495,6 +499,33 @@ def process_workbook_command_wrapper():
         process_workbook_button.configure(text="Done Processing Workbook")
     else:
         process_workbook_button.configure(text="Processing Workbook Canceled")
+
+
+def generate_single_barcode():
+    print("single barcode stub")
+
+    print_if_debug("creating temp directory")
+    if not args.keep_barcodes_in_cwd:
+        tempdir = tempfile.mkdtemp()
+    else:
+        temp_dir_in_cwd = os.path.join(program_launch_cwd, 'barcode images')
+        os.mkdir(temp_dir_in_cwd)
+        tempdir = temp_dir_in_cwd
+
+    save_path = tkinter.filedialog.asksaveasfilename(
+        initialdir=config.get('settings', 'initial_output_folder'),
+        initialfile=upc_entry.get(),
+        defaultextension='.png',
+        filetypes=[("PNG Image File", "*.png")])
+
+    if os.path.exists(os.path.dirname(save_path)):
+        barcode_path, _, _ = generate_barcode(interpret_barcode_string(upc_entry.get()), tempdir)
+        shutil.copyfile(barcode_path, save_path)
+
+    if not args.keep_barcode_files:
+        print_if_debug("removing temp folder " + tempdir)
+        shutil.rmtree(tempdir)
+        print_if_debug("success")
 
 
 both_workbook_frame = tkinter.ttk.Frame(root_window)
@@ -601,6 +632,32 @@ font_size_spinbox.grid(row=1, column=3, sticky=tkinter.E, pady=2)
 input_column_spinbox.grid(row=2, column=3, sticky=tkinter.E, pady=2)
 output_column_spinbox.grid(row=3, column=3, sticky=tkinter.E, pady=2)
 
+
+sidebar_frame = tkinter.ttk.Frame(master=root_window)
+
+single_barcode_frame = tkinter.Frame(master=sidebar_frame)
+single_barcode_frame.grid(row=0, column=1)
+show_sidebar = True
+def toggle_single_process_sidebar():
+    global show_sidebar
+    if show_sidebar:
+        single_barcode_frame.grid_remove()
+        show_sidebar = False
+    else:
+        single_barcode_frame.grid()
+        show_sidebar = True
+
+toggle_sidebar_button = tkinter.ttk.Button(master=sidebar_frame, text=">", command=toggle_single_process_sidebar, width=1)
+toggle_sidebar_button.grid(row=0, column=0, sticky=tkinter.N + tkinter.S)
+
+toggle_single_process_sidebar()
+
+upc_entry = tkinter.ttk.Entry(master=single_barcode_frame)
+create_barcode = tkinter.ttk.Button(master=single_barcode_frame, text="Save Barcode...", command=generate_single_barcode)
+
+upc_entry.pack()
+create_barcode.pack()
+
 process_workbook_button = tkinter.ttk.Button(master=go_button_frame, text="Select Workbooks",
                                              command=process_workbook_command_wrapper)
 
@@ -621,6 +678,8 @@ both_workbook_frame.grid(row=1, column=0, sticky=tkinter.W, padx=5, pady=5)
 both_workbook_frame.columnconfigure(0, weight=1)
 size_spinbox_frame.grid(row=1, column=1, sticky=tkinter.E + tkinter.N, padx=5, pady=(8, 5))
 size_spinbox_frame.columnconfigure(0, weight=1)
+sidebar_frame.grid(row=1, column=2, sticky=tkinter.N + tkinter.S, padx=5, pady=(8, 5))
+sidebar_frame.rowconfigure(0, weight=1)
 go_button_frame.pack(side=tkinter.LEFT, anchor='w')
 progress_bar_frame.pack(side=tkinter.RIGHT, anchor='e')
 go_and_progress_frame.grid(row=2, column=0, columnspan=2, sticky=tkinter.W + tkinter.E, padx=5, pady=5)
