@@ -31,7 +31,7 @@ from contextlib import redirect_stdout
 
 instance = tendo.singleton.SingleInstance()
 
-version = '1.5.4-dev'
+version = '1.6.0'
 
 appname = "Barcode Insert Utility"
 
