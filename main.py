@@ -312,6 +312,40 @@ def do_process_workbook():
     progress_numbers.configure(text=str(count) + "/" + str(ws.max_row))
     border_size = int(border_spinbox.get())
 
+    def generate_barcode(input_string):
+        ean = barcode.get(barcode_type_variable.get(), input_string, writer=ImageWriter())
+        # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
+        # dpi is the conversion from svg image size in mm, to what the image writer thinks is inches.
+        ean.default_writer_options['dpi'] = int(dpi_spinbox.get())
+        # module height is the barcode bar height in mm
+        ean.default_writer_options['module_height'] = float(height_spinbox.get())
+        # text distance is the distance between the bottom of the barcode, and the top of the text in mm
+        ean.default_writer_options['text_distance'] = 1
+        # font size is the text size in pt
+        ean.default_writer_options['font_size'] = int(font_size_spinbox.get())
+        # quiet zone is the distance from the ends of the barcode to the ends of the image in mm
+        ean.default_writer_options['quiet_zone'] = 2
+        # save barcode image with generated filename
+        print_if_debug("generating barcode image")
+        with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as initial_temp_file_path:
+            filename = ean.save(initial_temp_file_path.name[0:-4])
+            print_if_debug("success, barcode image path is: " + filename)
+            print_if_debug("opening " + str(filename) + " to add border")
+            barcode_image = pil_Image.open(str(filename))  # open image as pil object
+            print_if_debug("success")
+            print_if_debug("adding barcode and saving")
+            img_save = pil_ImageOps.expand(barcode_image, border=border_size,
+                                            fill='white')  # add border around image
+            width, height = img_save.size  # get image size of barcode with border
+            # resize cell to size of image
+            ws.column_dimensions[output_column_spinbox.get()].width = int(math.ceil(float(width) * .15))
+            ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
+            # write out image to file
+            with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as final_barcode_path:
+                img_save.save(final_barcode_path.name)
+                print_if_debug("success, final barcode path is: " + final_barcode_path.name)
+        return final_barcode_path.name
+
     for _ in ws.iter_rows():  # iterate over all rows in current worksheet
         if not process_workbook_keep_alive:
             break
@@ -360,46 +394,16 @@ def do_process_workbook():
             else:
                 raise ValueError("Cell is empty, skipping row")
 
-            ean = barcode.get(barcode_type_variable.get(), upc_barcode_string, writer=ImageWriter())
-            # select output image size via dpi. internally, pybarcode renders as svg, then renders that as a png file.
-            # dpi is the conversion from svg image size in mm, to what the image writer thinks is inches.
-            ean.default_writer_options['dpi'] = int(dpi_spinbox.get())
-            # module height is the barcode bar height in mm
-            ean.default_writer_options['module_height'] = float(height_spinbox.get())
-            # text distance is the distance between the bottom of the barcode, and the top of the text in mm
-            ean.default_writer_options['text_distance'] = 1
-            # font size is the text size in pt
-            ean.default_writer_options['font_size'] = int(font_size_spinbox.get())
-            # quiet zone is the distance from the ends of the barcode to the ends of the image in mm
-            ean.default_writer_options['quiet_zone'] = 2
-            # save barcode image with generated filename
-            print_if_debug("generating barcode image")
-            with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as initial_temp_file_path:
-                filename = ean.save(initial_temp_file_path.name[0:-4])
-                print_if_debug("success, barcode image path is: " + filename)
-                print_if_debug("opening " + str(filename) + " to add border")
-                barcode_image = pil_Image.open(str(filename))  # open image as pil object
-                print_if_debug("success")
-                print_if_debug("adding barcode and saving")
-                img_save = pil_ImageOps.expand(barcode_image, border=border_size,
-                                               fill='white')  # add border around image
-                width, height = img_save.size  # get image size of barcode with border
-                # resize cell to size of image
-                ws.column_dimensions[output_column_spinbox.get()].width = int(math.ceil(float(width) * .15))
-                ws.row_dimensions[count].height = int(math.ceil(float(height) * .75))
-                # write out image to file
-                with tempfile.NamedTemporaryFile(dir=tempdir, suffix='.png', delete=False) as final_barcode_path:
-                    img_save.save(final_barcode_path.name)
-                    print_if_debug("success, final barcode path is: " + final_barcode_path.name)
-                    # open image with as openpyxl image object
-                    print_if_debug("opening " + final_barcode_path.name + " to insert into output spreadsheet")
-                    img = OpenPyXlImage(final_barcode_path.name)
-                    print_if_debug("success")
-                    # attach image to cell
-                    print_if_debug("adding image to cell")
-                    # add image to cell
-                    ws.add_image(img, anchor=output_column_spinbox.get() + str(count))
-                    save_counter += 1
+            generated_barcode_path = generate_barcode(upc_barcode_string)
+            # open image with as openpyxl image object
+            print_if_debug("opening " + generated_barcode_path + " to insert into output spreadsheet")
+            img = OpenPyXlImage(generated_barcode_path)
+            print_if_debug("success")
+            # attach image to cell
+            print_if_debug("adding image to cell")
+            # add image to cell
+            ws.add_image(img, anchor=output_column_spinbox.get() + str(count))
+            save_counter += 1
             print_if_debug("success")
         except Exception as barcode_error:
             print_if_debug(barcode_error)
