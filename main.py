@@ -35,7 +35,7 @@ version = '1.6.1'
 
 appname = "Barcode Insert Utility"
 
-supported_barcode_types = ['code39', 'ean8', 'ean13']
+supported_barcode_types = ['code39', 'ean8', 'ean13', 'UPC']
 
 config_folder = appdirs.user_data_dir(appname)
 try:
@@ -351,6 +351,17 @@ def interpret_barcode_string(upc_barcode_string):
             else:
                 if len(upc_barcode_string) != 12:
                     raise ValueError("Input contents are not 12 characters")
+        elif barcode_type_variable.get() == "UPC":
+            if pad_ean_option.get() is True:
+                if len(upc_barcode_string) < 10:
+                    upc_barcode_string = upc_barcode_string.rjust(11, '0')
+                if len(upc_barcode_string) <= 11:
+                    upc_barcode_string = upc_barcode_string.ljust(12, '0')
+                else:
+                    raise ValueError("Input contents are more than 11 characters")
+            else:
+                if len(upc_barcode_string) != 11:
+                    raise ValueError("Input contents are not 11 characters")
         elif barcode_type_variable.get() == "code39":
             upc_barcode_string = upc_barcode_string.upper()
             upc_barcode_string = re.sub('[^A-Z0-9./*$%+\- ]+', ' ', upc_barcode_string)
