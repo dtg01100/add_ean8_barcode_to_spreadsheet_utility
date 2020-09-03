@@ -22,16 +22,12 @@ import platform
 import os
 import configparser
 import appdirs
-import tendo.singleton
 import re
 import io
 import barcode.pybarcode
 from contextlib import redirect_stdout
 
-
-instance = tendo.singleton.SingleInstance()
-
-version = '1.6.1'
+version = '1.7.0'
 
 appname = "Barcode Insert Utility"
 
