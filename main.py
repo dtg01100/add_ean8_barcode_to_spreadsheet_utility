@@ -28,7 +28,7 @@ import barcode.pybarcode
 import logging
 from contextlib import redirect_stdout
 
-version = '1.7.0'
+version = '1.7.1'
 
 appname = "Barcode Insert Utility"
 
