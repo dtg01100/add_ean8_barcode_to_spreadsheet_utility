@@ -186,9 +186,6 @@ except Exception as error:
     file_limit = 100
 
 if args.log:
-    import sys
-
-
     class Logger():
         def __init__(self):
             self.logger = logging.getLogger('Barcode Insert Utility')
