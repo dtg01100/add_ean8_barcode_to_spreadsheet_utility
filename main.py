@@ -25,6 +25,7 @@ import appdirs
 import re
 import io
 import barcode.pybarcode
+import logging
 from contextlib import redirect_stdout
 
 version = '1.7.0'
@@ -188,14 +189,20 @@ if args.log:
     import sys
 
 
-    class Logger(object):
+    class Logger():
         def __init__(self):
-            self.terminal = sys.stdout
-            self.log = open("logfile.log", "a")
+            self.logger = logging.getLogger('Barcode Insert Utility')
+            self.logger.setLevel(logging.DEBUG)
+            fh = logging.FileHandler('logfile.log')
+            ch = logging.StreamHandler()
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
+            fh.setFormatter(formatter)
+            ch.setFormatter(formatter)
+            self.logger.addHandler(fh)
+            self.logger.addHandler(ch)
 
         def write(self, message):
-            self.terminal.write(message)
-            self.log.write(message)
+            self.logger.debug(message)
 
         def flush(self):
             # this flush method is needed for python 3 compatibility.
@@ -204,7 +211,7 @@ if args.log:
             pass
 
 
-    sys.stdout = Logger()
+    loghandler = Logger()
 
 if args.debug:
     print(launch_options.parse_args())
@@ -213,7 +220,7 @@ if args.debug:
 # this is a wrapper function for print, so that we can have it only spam stdout when debug is set
 def print_if_debug(string):
     if args.debug:
-        print(string)
+        loghandler.write(string)
 
 
 print_if_debug("Barcode Insert Utility version " + version)
