@@ -69,8 +69,8 @@ if not os.path.exists(settings_file_path):
     config.set('settings', 'input_data_column', 'B')
     config.set('settings', 'barcode_output_column', 'A')
     config.set('settings', 'barcode type', 'code39')
-    config.set('settings', 'pad ean barcodes', False)
-    with open(settings_file_path, 'w') as configfile:
+    config.set('settings', 'pad ean barcodes', "False")
+    with open(settings_file_path, 'w', encoding='utf8') as configfile:
         config.write(configfile)
 
 config.read(settings_file_path)  # open config file
@@ -237,7 +237,7 @@ def select_folder_old_new_wrapper(selection):
         child.configure(state=tkinter.DISABLED)
     new_workbook_selection_button.configure(state=tkinter.DISABLED)
     old_workbook_selection_button.configure(state=tkinter.DISABLED)
-    if selection is "old":
+    if selection == "old":
         old_workbook_path_proposed = tkinter.filedialog.askopenfilename(
             initialdir=config.get('settings', 'initial_input_folder'),
             filetypes=[("Excel Spreadsheet", "*.xlsx")])
@@ -245,7 +245,7 @@ def select_folder_old_new_wrapper(selection):
         try:
             if os.path.exists(old_workbook_path_proposed):
                 config.set('settings', 'initial_input_folder', os.path.dirname(old_workbook_path_proposed))
-                with open(settings_file_path, 'w') as configuration_file:
+                with open(settings_file_path, 'w', encoding='utf8') as configuration_file:
                     config.write(configuration_file)
                 try:
                     openpyxl.load_workbook(old_workbook_path_proposed, read_only=True)
@@ -268,7 +268,7 @@ def select_folder_old_new_wrapper(selection):
             if os.path.exists(os.path.dirname(new_workbook_path_proposed)):
                 new_workbook_path = new_workbook_path_proposed
                 config.set('settings', 'initial_output_folder', os.path.dirname(new_workbook_path))
-                with open(settings_file_path, 'w') as configuration_file:
+                with open(settings_file_path, 'w', encoding='utf8') as configuration_file:
                     config.write(configuration_file)
                 new_workbook_path_wrapped = '\n'.join(
                     textwrap.wrap(new_workbook_path, width=75, replace_whitespace=False))
@@ -322,8 +322,8 @@ def interpret_barcode_string(upc_barcode_string):
         if barcode_type_variable.get() == "ean13" or barcode_type_variable.get() == "ean8":
             try:
                 _ = int(upc_barcode_string)  # check that "upc_barcode_string" can be cast to int
-            except ValueError:
-                raise ValueError("Input contents are not an integer")
+            except ValueError as exc:
+                raise ValueError("Input contents are not an integer") from exc
         # select barcode type, specify barcode, and select image writer to save as png
         if barcode_type_variable.get() == "ean8":
             if pad_ean_option.get() is True:
@@ -362,8 +362,7 @@ def interpret_barcode_string(upc_barcode_string):
             upc_barcode_string = upc_barcode_string.upper()
             upc_barcode_string = re.sub('[^A-Z0-9./*$%+\- ]+', ' ', upc_barcode_string)
         return upc_barcode_string
-    else:
-        raise ValueError("Input is empty")
+    raise ValueError("Input is empty")
 
 def do_process_workbook():
     # this is called as a background thread to ensure the interface is responsive
@@ -464,8 +463,6 @@ def process_workbook_thread():
 
 
 def process_workbook_command_wrapper():
-    global new_workbook_path
-
     def kill_process_workbook():
         # this function sets the keep alive flag for the processing workbook thread to false,
         # this lets the thread exit gracefully, and clean up after itself
@@ -484,7 +481,7 @@ def process_workbook_command_wrapper():
     config.set('settings', 'barcode_output_column', output_column_spinbox.get())
     config.set('settings', 'barcode type', barcode_type_variable.get())
     config.set('settings', 'pad ean barcodes', pad_ean_option.get())
-    with open(settings_file_path, 'w') as configfile_before_processing:
+    with open(settings_file_path, 'w', encoding='utf8') as configfile_before_processing:
         config.write(configfile_before_processing)
     for child in size_spinbox_frame.winfo_children():
         child.configure(state=tkinter.DISABLED)
@@ -533,7 +530,7 @@ def generate_single_barcode():
             barcode_path, _, _ = generate_barcode(interpret_barcode_string(upc_entry.get()), tempdir)
             shutil.copyfile(barcode_path, save_path)
     except Exception as error:
-        tkinter.messagebox.showerror(master=root_window, message="Failed to generate barcode image: {}".format(str(error)))
+        tkinter.messagebox.showerror(master=root_window, message=f"Failed to generate barcode image: {str(error)}")
 
     if not args.keep_barcode_files:
         print_if_debug("removing temp folder " + tempdir)
@@ -570,27 +567,27 @@ pad_ean_option.set(config.getboolean('settings', 'pad ean barcodes'))
 
 dpi_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=120, to=400, width=3, justify=tkinter.RIGHT)
 dpi_spinbox.delete(0, "end")
-dpi_spinbox.insert(0, config.getint('settings', 'barcode_dpi'))
+dpi_spinbox.insert(0, str(config.getint('settings', 'barcode_dpi')))
 
-height_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=5, to_=50, width=3, justify=tkinter.RIGHT)
+height_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=5, to=50, width=3, justify=tkinter.RIGHT)
 height_spinbox.delete(0, "end")
-height_spinbox.insert(0, config.getint('settings', 'barcode_module_height'))
+height_spinbox.insert(0, str(config.getint('settings', 'barcode_module_height')))
 
-border_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=25, width=3, justify=tkinter.RIGHT)
+border_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to=25, width=3, justify=tkinter.RIGHT)
 border_spinbox.delete(0, "end")
-border_spinbox.insert(0, config.getint('settings', 'barcode_border'))
+border_spinbox.insert(0, str(config.getint('settings', 'barcode_border')))
 
-font_size_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to_=15, width=3, justify=tkinter.RIGHT)
+font_size_spinbox = tkinter.Spinbox(size_spinbox_frame, from_=0, to=15, width=3, justify=tkinter.RIGHT)
 font_size_spinbox.delete(0, "end")
-font_size_spinbox.insert(0, config.getint('settings', 'barcode_font_size'))
+font_size_spinbox.insert(0, str(config.getint('settings', 'barcode_font_size')))
 
 input_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
 input_column_spinbox.delete(0, "end")
-input_column_spinbox.insert(0, config.get('settings', 'input_data_column'))
+input_column_spinbox.insert(0, str(config.get('settings', 'input_data_column')))
 
 output_column_spinbox = tkinter.Spinbox(size_spinbox_frame, values=column_letter_tuple, width=3, justify=tkinter.RIGHT)
 output_column_spinbox.delete(0, "end")
-output_column_spinbox.insert(0, config.get('settings', 'barcode_output_column'))
+output_column_spinbox.insert(0, str(config.get('settings', 'barcode_output_column')))
 
 set_spinbutton_state_read_only()
 
@@ -659,6 +656,7 @@ def toggle_single_process_sidebar():
     else:
         single_barcode_frame.grid()
         show_sidebar = True
+
 
 toggle_sidebar_button = tkinter.ttk.Button(master=sidebar_frame, text=">", command=toggle_single_process_sidebar, width=1)
 toggle_sidebar_button.grid(row=0, column=0, sticky=tkinter.N + tkinter.S)
